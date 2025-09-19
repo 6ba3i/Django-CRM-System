@@ -1,0 +1,242 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CRM System{% endblock %} - Glassmorphic CRM</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Files -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Glassmorphic Sidebar Navigation -->
+    <nav class="glass-sidebar" id="sidebar">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3h18v18H3z"/>
+                <path d="M9 3v18"/>
+                <path d="M15 3v18"/>
+                <path d="M3 9h18"/>
+                <path d="M3 15h18"/>
+            </svg>
+            <span>CRM Pro</span>
+        </div>
+        
+        <div class="nav-section">
+            <a href="{% url 'dashboard' %}" class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>Dashboard</span>
+                {% if notifications_count %}
+                <span class="notification-badge">{{ notifications_count }}</span>
+                {% endif %}
+            </a>
+            
+            <a href="{% url 'customer_list' %}" class="nav-item {% if active_tab == 'customers' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Customers</span>
+            </a>
+            
+            <a href="{% url 'pipeline_view' %}" class="nav-item {% if active_tab == 'pipeline' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                </svg>
+                <span>Sales Pipeline</span>
+            </a>
+            
+            <a href="{% url 'deal_list' %}" class="nav-item {% if active_tab == 'deals' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <span>Deals</span>
+            </a>
+            
+            <a href="{% url 'analytics_dashboard' %}" class="nav-item {% if active_tab == 'analytics' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                <span>Analytics</span>
+            </a>
+            
+            <a href="{% url 'sales_forecast' %}" class="nav-item {% if active_tab == 'forecast' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                <span>Forecast</span>
+            </a>
+            
+            {% if user.is_staff %}
+            <a href="{% url 'team_performance' %}" class="nav-item {% if active_tab == 'team' %}active{% endif %}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Team</span>
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="nav-section" style="margin-top: auto; margin-bottom: 20px;">
+            <a href="{% url 'profile' %}" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6"/>
+                    <path d="M12 17v6"/>
+                    <path d="M4.22 4.22l4.24 4.24"/>
+                    <path d="M15.54 15.54l4.24 4.24"/>
+                    <path d="M1 12h6"/>
+                    <path d="M17 12h6"/>
+                    <path d="M4.22 19.78l4.24-4.24"/>
+                    <path d="M15.54 8.46l4.24-4.24"/>
+                </svg>
+                <span>Settings</span>
+            </a>
+            
+            <a href="{% url 'logout' %}" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Main Content Area -->
+    <main class="main-content" style="margin-left: 260px; padding: 24px; min-height: 100vh;">
+        <!-- Top Bar -->
+        <div class="glass-panel" style="margin-bottom: 24px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 4px;">{% block page_title %}Dashboard{% endblock %}</h1>
+                <p style="color: rgba(255,255,255,0.6); font-size: 14px;">{% block page_subtitle %}Welcome back, {{ user.get_full_name|default:user.username }}{% endblock %}</p>
+            </div>
+            
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <!-- Search -->
+                <div style="position: relative;">
+                    <input type="text" class="glass-input" placeholder="Search..." style="width: 250px; padding-left: 40px;">
+                    <svg style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                </div>
+                
+                <!-- Notifications -->
+                <button class="glass-btn" style="padding: 8px; position: relative;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    {% if unread_notifications %}
+                    <span class="notification-badge">{{ unread_notifications }}</span>
+                    {% endif %}
+                </button>
+                
+                <!-- User Profile -->
+                <div class="glass-panel" style="padding: 8px 16px; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4a90e2, #50c878); display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                        {{ user.get_full_name|first|default:user.username|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 500;">{{ user.get_full_name|default:user.username }}</div>
+                        <div style="font-size: 12px; opacity: 0.6;">{{ user.groups.first|default:"Sales Rep" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div style="margin-bottom: 24px;">
+            {% for message in messages %}
+            <div class="glass-alert {{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Floating Action Button -->
+    {% block fab %}
+    <button class="fab" onclick="showQuickAdd()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    </button>
+    {% endblock %}
+    
+    <!-- Quick Add Modal -->
+    <div class="glass-modal" id="quickAddModal">
+        <div class="glass-modal-content">
+            <h2 style="margin-bottom: 24px;">Quick Add</h2>
+            <div style="display: grid; gap: 16px;">
+                <a href="{% url 'customer_create' %}" class="glass-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    New Customer
+                </a>
+                <a href="{% url 'deal_create' %}" class="glass-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    New Deal
+                </a>
+            </div>
+            <button class="glass-btn secondary" onclick="hideQuickAdd()" style="margin-top: 24px; width: 100%;">Cancel</button>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Quick Add Modal
+        function showQuickAdd() {
+            document.getElementById('quickAddModal').classList.add('active');
+        }
+        
+        function hideQuickAdd() {
+            document.getElementById('quickAddModal').classList.remove('active');
+        }
+        
+        // Click outside to close modal
+        document.getElementById('quickAddModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideQuickAdd();
+            }
+        });
+    </script>
+</body>
+</html>
