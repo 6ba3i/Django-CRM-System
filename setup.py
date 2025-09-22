@@ -1,263 +1,165 @@
 #!/usr/bin/env python
 """
-Complete setup script for CRM database and initial data
-Run this after installing requirements.txt
+Quick Setup Script for CRM Pro
+Run this once to set up everything: python quick_setup.py
 """
 import os
 import sys
-import django
-from datetime import datetime, timedelta
-import random
+import subprocess
+import logging
 
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crm_project.settings')
-django.setup()
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
 
-from django.core.management import execute_from_command_line
-from django.contrib.auth.models import User, Group
-from django.db import connection
-
-def run_migrations():
-    """Run database migrations"""
-    print("🔄 Running migrations...")
+def run_command(command, description):
+    """Run a command and handle errors"""
+    logger.info(f"🔄 {description}...")
     try:
-        execute_from_command_line(['manage.py', 'makemigrations'])
-        execute_from_command_line(['manage.py', 'migrate'])
-        print("✅ Migrations completed successfully!")
-    except Exception as e:
-        print(f"❌ Migration error: {e}")
-        sys.exit(1)
-
-def create_superuser():
-    """Create admin superuser"""
-    from django.contrib.auth.models import User
-    
-    if User.objects.filter(username='admin').exists():
-        print("ℹ️  Admin user already exists")
-        return
-    
-    print("👤 Creating admin superuser...")
-    User.objects.create_superuser(
-        username='admin',
-        email='admin@crm.local',
-        password='admin123'
-    )
-    print("✅ Admin user created (username: admin, password: admin123)")
-
-def create_groups():
-    """Create user groups"""
-    print("👥 Creating user groups...")
-    groups = ['Sales', 'Manager', 'Admin']
-    
-    for group_name in groups:
-        group, created = Group.objects.get_or_create(name=group_name)
-        if created:
-            print(f"  ✅ Created group: {group_name}")
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info(f"✅ {description} completed!")
+            if result.stdout:
+                logger.info(f"   Output: {result.stdout.strip()}")
+            return True
         else:
-            print(f"  ℹ️  Group already exists: {group_name}")
-
-def create_sample_users():
-    """Create sample sales users"""
-    from django.contrib.auth.models import User, Group
-    
-    print("👥 Creating sample users...")
-    
-    sales_group = Group.objects.get_or_create(name='Sales')[0]
-    
-    sample_users = [
-        {'username': 'john.smith', 'first_name': 'John', 'last_name': 'Smith', 'email': 'john@crm.local'},
-        {'username': 'jane.doe', 'first_name': 'Jane', 'last_name': 'Doe', 'email': 'jane@crm.local'},
-        {'username': 'mike.wilson', 'first_name': 'Mike', 'last_name': 'Wilson', 'email': 'mike@crm.local'},
-    ]
-    
-    for user_data in sample_users:
-        if not User.objects.filter(username=user_data['username']).exists():
-            user = User.objects.create_user(
-                username=user_data['username'],
-                first_name=user_data['first_name'],
-                last_name=user_data['last_name'],
-                email=user_data['email'],
-                password='password123'
-            )
-            user.groups.add(sales_group)
-            print(f"  ✅ Created user: {user_data['username']} (password: password123)")
-        else:
-            print(f"  ℹ️  User already exists: {user_data['username']}")
-
-def create_sample_data():
-    """Create sample customers and deals"""
-    from customers.models import Customer, Interaction
-    from sales.models import Deal, PipelineHistory, SalesActivity
-    from django.contrib.auth.models import User
-    
-    print("📊 Creating sample data...")
-    
-    # Get users for assignment
-    users = list(User.objects.filter(is_active=True))
-    if not users:
-        print("❌ No users found. Create users first.")
-        return
-    
-    # Create sample customers
-    sample_customers = [
-        {'name': 'Acme Corporation', 'email': 'contact@acme.com', 'phone': '+1-555-0100', 'company': 'Acme Corp', 'status': 'Active'},
-        {'name': 'TechStart Inc', 'email': 'info@techstart.com', 'phone': '+1-555-0101', 'company': 'TechStart', 'status': 'Lead'},
-        {'name': 'Global Solutions', 'email': 'sales@globalsolutions.com', 'phone': '+1-555-0102', 'company': 'Global Solutions', 'status': 'Active'},
-        {'name': 'Innovation Labs', 'email': 'hello@innovationlabs.com', 'phone': '+1-555-0103', 'company': 'Innovation Labs', 'status': 'Prospect'},
-        {'name': 'Future Systems', 'email': 'contact@futuresystems.com', 'phone': '+1-555-0104', 'company': 'Future Systems', 'status': 'Active'},
-        {'name': 'Digital Dynamics', 'email': 'info@digitaldynamics.com', 'phone': '+1-555-0105', 'company': 'Digital Dynamics', 'status': 'Lead'},
-        {'name': 'CloudFirst', 'email': 'sales@cloudfirst.com', 'phone': '+1-555-0106', 'company': 'CloudFirst', 'status': 'Active'},
-        {'name': 'DataTech Solutions', 'email': 'contact@datatech.com', 'phone': '+1-555-0107', 'company': 'DataTech', 'status': 'Prospect'},
-        {'name': 'AI Innovations', 'email': 'hello@aiinnovations.com', 'phone': '+1-555-0108', 'company': 'AI Innovations', 'status': 'Active'},
-        {'name': 'Quantum Computing Co', 'email': 'info@quantumco.com', 'phone': '+1-555-0109', 'company': 'Quantum Computing', 'status': 'Lead'},
-    ]
-    
-    created_customers = []
-    for customer_data in sample_customers:
-        if not Customer.objects.filter(email=customer_data['email']).exists():
-            customer_data['assigned_to'] = random.choice(users)
-            customer_data['created_date'] = datetime.now() - timedelta(days=random.randint(1, 90))
-            customer = Customer.objects.create(**customer_data)
-            created_customers.append(customer)
-            print(f"  ✅ Created customer: {customer.name}")
-    
-    # Create sample deals
-    stages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost']
-    
-    sample_deals = [
-        {'title': 'Enterprise Software License', 'value': 150000},
-        {'title': 'Cloud Migration Project', 'value': 85000},
-        {'title': 'Annual Support Contract', 'value': 45000},
-        {'title': 'Custom Development', 'value': 120000},
-        {'title': 'Security Audit Services', 'value': 35000},
-        {'title': 'Data Analytics Platform', 'value': 95000},
-        {'title': 'Mobile App Development', 'value': 65000},
-        {'title': 'Infrastructure Upgrade', 'value': 180000},
-        {'title': 'Consulting Services', 'value': 55000},
-        {'title': 'API Integration Project', 'value': 40000},
-        {'title': 'Training Program', 'value': 25000},
-        {'title': 'Database Optimization', 'value': 30000},
-        {'title': 'Cybersecurity Package', 'value': 75000},
-        {'title': 'AI Implementation', 'value': 200000},
-        {'title': 'Automation Suite', 'value': 110000},
-    ]
-    
-    customers = Customer.objects.all()
-    if customers:
-        for deal_data in sample_deals:
-            deal_data['customer'] = random.choice(customers)
-            deal_data['stage'] = random.choice(stages)
-            deal_data['assigned_to'] = random.choice(users)
-            deal_data['expected_close'] = datetime.now().date() + timedelta(days=random.randint(7, 90))
-            deal_data['created_date'] = datetime.now() - timedelta(days=random.randint(1, 60))
-            
-            # Set probability based on stage
-            stage_probability = {
-                'Lead': 10,
-                'Qualified': 25,
-                'Proposal': 50,
-                'Negotiation': 75,
-                'Won': 100,
-                'Lost': 0
-            }
-            deal_data['probability'] = stage_probability.get(deal_data['stage'], 25)
-            
-            # Set status based on stage
-            if deal_data['stage'] == 'Won':
-                deal_data['status'] = 'Won'
-            elif deal_data['stage'] == 'Lost':
-                deal_data['status'] = 'Lost'
-            else:
-                deal_data['status'] = 'Active'
-            
-            deal_data['notes'] = f"Initial discussion about {deal_data['title']}"
-            
-            deal = Deal.objects.create(**deal_data)
-            print(f"  ✅ Created deal: {deal.title} - ${deal.value:,.0f}")
-            
-            # Create pipeline history
-            PipelineHistory.objects.create(
-                deal=deal,
-                from_stage='New',
-                to_stage=deal.stage,
-                changed_by=deal.assigned_to,
-                notes='Deal created'
-            )
-        
-        # Create sample interactions
-        interaction_types = ['Email', 'Call', 'Meeting', 'Demo']
-        outcomes = ['Positive', 'Neutral', 'Negative']
-        
-        for customer in customers[:5]:  # Create interactions for first 5 customers
-            for i in range(random.randint(1, 3)):
-                Interaction.objects.create(
-                    customer=customer,
-                    type=random.choice(interaction_types),
-                    description=f"Discussed product features and pricing options",
-                    date=datetime.now() - timedelta(days=random.randint(1, 30)),
-                    created_by=customer.assigned_to,
-                    outcome=random.choice(outcomes)
-                )
-            print(f"  ✅ Created interactions for: {customer.name}")
-    
-    print("✅ Sample data created successfully!")
-
-def collect_static():
-    """Collect static files"""
-    print("📁 Collecting static files...")
-    try:
-        execute_from_command_line(['manage.py', 'collectstatic', '--noinput'])
-        print("✅ Static files collected!")
+            logger.error(f"❌ {description} failed!")
+            logger.error(f"   Error: {result.stderr.strip()}")
+            return False
     except Exception as e:
-        print(f"⚠️  Static files warning: {e}")
+        logger.error(f"❌ {description} failed with exception: {e}")
+        return False
+
+def check_firebase_config():
+    """Check if Firebase is configured"""
+    firebase_path = "core/serviceAccountkey.json"
+    env_path = ".env"
+    
+    if not os.path.exists(firebase_path):
+        logger.warning(f"⚠️  Firebase service account key not found at {firebase_path}")
+        logger.info("   Please add your Firebase service account key to enable cloud features")
+        return False
+    
+    if not os.path.exists(env_path):
+        logger.warning("⚠️  .env file not found")
+        logger.info("   Creating default .env file...")
+        create_default_env()
+        return False
+    
+    return True
+
+def create_default_env():
+    """Create default .env file"""
+    env_content = """# Django Settings
+SECRET_KEY=django-insecure-change-this-in-production-please
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Firebase Configuration (Update these with your Firebase project details)
+FIREBASE_CREDENTIALS_PATH=core/serviceAccountkey.json
+FIREBASE_DATABASE_URL=https://your-project-id.firebaseio.com
+
+# Google OAuth (Get these from Google Cloud Console)
+GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
+GOOGLE_OAUTH2_CLIENT_SECRET=your-google-client-secret
+"""
+    
+    with open(".env", "w") as f:
+        f.write(env_content)
+    
+    logger.info("✅ Created default .env file")
 
 def main():
     """Main setup function"""
-    print("=" * 60)
-    print("🚀 CRM SETUP SCRIPT")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("🚀 CRM PRO - QUICK SETUP")
+    logger.info("=" * 60)
     
-    # Check if .env file exists
-    if not os.path.exists('.env'):
-        print("\n⚠️  Warning: .env file not found!")
-        print("Creating default .env file...")
-        with open('.env', 'w') as f:
-            f.write("""SECRET_KEY=django-insecure-dev-key-change-this-later
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-FIREBASE_CREDENTIALS_PATH=core/serviceAccountKey.json
-FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
-""")
-        print("✅ Created .env file - Please update Firebase settings if needed\n")
+    # Check if we're in the right directory
+    if not os.path.exists("manage.py"):
+        logger.error("❌ manage.py not found. Please run this script from the project root directory.")
+        sys.exit(1)
     
-    # Run setup steps
-    run_migrations()
-    print()
+    # Check Python version
+    if sys.version_info < (3, 8):
+        logger.error("❌ Python 3.8+ required")
+        sys.exit(1)
     
-    create_superuser()
-    print()
+    logger.info(f"🐍 Python version: {sys.version}")
     
-    create_groups()
-    print()
+    # Install requirements
+    if not run_command("pip install -r requirements.txt", "Installing Python packages"):
+        logger.error("Failed to install requirements. Please check your environment.")
+        sys.exit(1)
     
-    create_sample_users()
-    print()
+    # Check Firebase configuration
+    firebase_configured = check_firebase_config()
     
-    create_sample_data()
-    print()
+    # Run migrations
+    if not run_command("python manage.py makemigrations", "Creating migrations"):
+        logger.warning("Some migrations might already exist")
     
-    collect_static()
+    if not run_command("python manage.py migrate", "Running database migrations"):
+        logger.error("Database migration failed")
+        sys.exit(1)
     
-    print("\n" + "=" * 60)
-    print("🎉 SETUP COMPLETE!")
-    print("=" * 60)
-    print("\n📝 You can now login with:")
-    print("  Admin: username='admin', password='admin123'")
-    print("  Sales: username='john.smith', password='password123'")
-    print("\n🌐 Run the server with:")
-    print("  python manage.py runserver")
-    print("\n🔗 Then visit: http://localhost:8000/")
-    print("=" * 60)
+    # Create superuser (non-interactive)
+    logger.info("👤 Creating admin superuser...")
+    try:
+        import django
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crm_project.settings')
+        django.setup()
+        
+        from django.contrib.auth.models import User
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser('admin', 'admin@crm.local', 'admin123')
+            logger.info("✅ Admin user created (username: admin, password: admin123)")
+        else:
+            logger.info("ℹ️  Admin user already exists")
+    except Exception as e:
+        logger.error(f"❌ Failed to create superuser: {e}")
+    
+    # Create user groups
+    try:
+        from django.contrib.auth.models import Group
+        groups = ['Sales', 'Manager', 'Admin']
+        for group_name in groups:
+            Group.objects.get_or_create(name=group_name)
+        logger.info("✅ User groups created")
+    except Exception as e:
+        logger.error(f"❌ Failed to create groups: {e}")
+    
+    # Collect static files
+    if not run_command("python manage.py collectstatic --noinput", "Collecting static files"):
+        logger.warning("Static files collection had issues")
+    
+    # Final status
+    logger.info("\n" + "=" * 60)
+    logger.info("🎉 SETUP COMPLETE!")
+    logger.info("=" * 60)
+    
+    if firebase_configured:
+        logger.info("✅ Firebase: Configured")
+    else:
+        logger.info("⚠️  Firebase: Not configured (add serviceAccountkey.json)")
+    
+    logger.info("\n📝 Next steps:")
+    logger.info("1. 🔧 Configure Google OAuth in Google Cloud Console")
+    logger.info("2. 📱 Update .env with your Google OAuth credentials")
+    logger.info("3. 🔥 Add your Firebase service account key")
+    logger.info("4. 🚀 Run: python manage.py runserver")
+    logger.info("5. 🌐 Visit: http://localhost:8000/")
+    
+    logger.info("\n🔑 Default admin login:")
+    logger.info("   Username: admin")
+    logger.info("   Password: admin123")
+    
+    logger.info("\n💡 Tips:")
+    logger.info("   • Use the 'Initialize System' button on login page")
+    logger.info("   • Login with Google OAuth for best experience")
+    logger.info("   • Check Firebase console for cloud data")
+    
+    logger.info("=" * 60)
 
 if __name__ == "__main__":
     main()

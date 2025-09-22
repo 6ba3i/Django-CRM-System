@@ -1,18 +1,15 @@
- # Main URL routing
+# Main URL routing
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Authentication URLs
-    path('login/', auth_views.LoginView.as_view(template_name='auth/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('signup/', views.signup_view, name='signup'),
+    # Authentication URLs (Google OAuth)
+    path('accounts/', include('allauth.urls')),
     
     # Main dashboard
     path('', views.dashboard_view, name='dashboard'),
@@ -25,6 +22,10 @@ urlpatterns = [
     # API endpoints
     path('api/dashboard-metrics/', views.dashboard_metrics_api, name='dashboard_metrics_api'),
     path('api/notifications/', views.notifications_api, name='notifications_api'),
+    path('api/init/', views.initialize_system, name='initialize_system'),
+    
+    # Profile management
+    path('profile/', views.profile_view, name='profile'),
 ]
 
 # Serve media files in development

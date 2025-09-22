@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile{% endblock %}
+{% block page_title %}User Profile{% endblock %}
+{% block page_subtitle %}Manage your account settings{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+    <!-- Profile Information -->
+    <div class="glass-panel">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 24px;">Profile Information</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">First Name</label>
+                    <input type="text" name="first_name" value="{{ user.first_name }}" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Last Name</label>
+                    <input type="text" name="last_name" value="{{ user.last_name }}" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Email</label>
+                    <input type="email" name="email" value="{{ user.email }}" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Username</label>
+                    <input type="text" value="{{ user.username }}" class="glass-input" disabled>
+                    <small style="color: rgba(255,255,255,0.6); font-size: 12px;">Username cannot be changed</small>
+                </div>
+                
+                <button type="submit" class="glass-btn primary">
+                    Update Profile
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Account Details -->
+    <div class="glass-panel">
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 24px;">Account Details</h2>
+        
+        <div style="display: grid; gap: 16px;">
+            <div class="glass-card" style="padding: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #4a90e2, #50c878); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;">
+                        {{ user.get_full_name|first|default:user.username|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 500; font-size: 16px;">{{ user.get_full_name|default:user.username }}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 14px;">{{ user.email }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: grid; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: rgba(255,255,255,0.8);">Account Type</span>
+                    <span style="font-weight: 500;">
+                        {% if user.is_superuser %}
+                            Admin
+                        {% elif user.is_staff %}
+                            Staff
+                        {% else %}
+                            User
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: rgba(255,255,255,0.8);">Member Since</span>
+                    <span style="font-weight: 500;">{{ user.date_joined|date:"M d, Y" }}</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: rgba(255,255,255,0.8);">Last Login</span>
+                    <span style="font-weight: 500;">{{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                    <span style="color: rgba(255,255,255,0.8);">Status</span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: #50c878;"></div>
+                        <span style="font-weight: 500; color: #50c878;">Active</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Actions -->
+<div class="glass-panel" style="margin-top: 32px;">
+    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 24px;">Account Actions</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <button class="glass-btn secondary" onclick="changePassword()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <circle cx="12" cy="16" r="1"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Change Password
+        </button>
+        
+        <button class="glass-btn secondary" onclick="exportData()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export Data
+        </button>
+        
+        <a href="{% url 'account_logout' %}" class="glass-btn danger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changePassword() {
+    alert('Password change functionality would be implemented here.\nFor now, you can change your password through Django admin panel.');
+}
+
+function exportData() {
+    alert('Data export functionality would be implemented here.\nThis would allow users to download their CRM data.');
+}
+</script>
+{% endblock %}
