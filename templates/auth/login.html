@@ -19,120 +19,352 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, #4a90e2 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, #50c878 0%, transparent 50%);
+            opacity: 0.1;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-20px, -20px) rotate(1deg); }
+            66% { transform: translate(20px, -10px) rotate(-1deg); }
         }
         
         .login-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             padding: 40px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
+            border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        h2 {
             text-align: center;
-            margin-bottom: 32px;
-            font-size: 28px;
-            font-weight: 700;
+            position: relative;
+            z-index: 1;
         }
         
-        .form-group {
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #4a90e2, #50c878);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .tagline {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 32px;
+        }
+        
+        .google-btn {
+            width: 100%;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a1d29;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
             margin-bottom: 24px;
         }
         
-        label {
-            display: block;
-            margin-bottom: 8px;
+        .google-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .google-icon {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 32px 0;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .divider span {
+            padding: 0 16px;
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
         }
         
-        input {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-        }
-        
-        button {
+        .demo-login {
             width: 100%;
             padding: 12px 24px;
-            background: linear-gradient(135deg, #4a90e2, #50c878);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .demo-login:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+        
+        .initialization-panel {
+            margin-top: 32px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .init-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #50c878;
+        }
+        
+        .init-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .init-btn {
+            width: 100%;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #50c878, #4a90e2);
             border: none;
             border-radius: 8px;
             color: #ffffff;
             font-weight: 600;
-            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
         
-        button:hover {
+        .init-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
         
-        .error-message {
-            background: rgba(255, 59, 48, 0.2);
-            border: 1px solid rgba(255, 59, 48, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 24px;
-            font-size: 14px;
-            color: #ff3b30;
+        .init-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
         
-        .logo {
-            text-align: center;
-            margin-bottom: 24px;
-            font-size: 24px;
-            font-weight: 700;
+        .status-message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .status-success {
+            background: rgba(80, 200, 120, 0.2);
             color: #50c878;
+            border: 1px solid rgba(80, 200, 120, 0.3);
+        }
+        
+        .status-error {
+            background: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+        
+        .status-loading {
+            background: rgba(74, 144, 226, 0.2);
+            color: #4a90e2;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .features {
+            margin-top: 24px;
+            text-align: left;
+        }
+        
+        .feature-list {
+            list-style: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        .feature-list li {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feature-list li::before {
+            content: "✓";
+            color: #50c878;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="logo">CRM Pro</div>
-        <h2>Welcome Back</h2>
+        <p class="tagline">Professional Customer Relationship Management</p>
         
-        {% if form.errors %}
-        <div class="error-message">
-            Invalid username or password. Please try again.
+        <h1>Welcome to CRM Pro</h1>
+        
+        <!-- Google OAuth Login -->
+        <a href="{% url 'google_oauth2_login' %}" class="google-btn">
+            <svg class="google-icon" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continue with Google
+        </a>
+        
+        <div class="divider">
+            <span>OR</span>
         </div>
-        {% endif %}
         
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="id_username">Username</label>
-                <input type="text" name="username" id="id_username" required autofocus>
+        <a href="#" class="demo-login" onclick="loginAsDemo()">
+            Try Demo Account
+        </a>
+        
+        <!-- System Initialization Panel -->
+        <div class="initialization-panel">
+            <div class="init-title">🚀 First Time Setup</div>
+            <div class="init-description">
+                Initialize your CRM system with Firebase database, sample data, and admin account.
             </div>
             
-            <div class="form-group">
-                <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" required>
-            </div>
+            <button class="init-btn" onclick="initializeSystem()" id="initBtn">
+                Initialize System
+            </button>
             
-            <button type="submit">Login</button>
-        </form>
+            <div id="statusMessage"></div>
+            
+            <div class="features">
+                <ul class="feature-list">
+                    <li>Firebase cloud database</li>
+                    <li>Google OAuth authentication</li>
+                    <li>Sample customers & deals</li>
+                    <li>Admin dashboard access</li>
+                </ul>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        async function initializeSystem() {
+            const btn = document.getElementById('initBtn');
+            const statusDiv = document.getElementById('statusMessage');
+            
+            btn.disabled = true;
+            btn.textContent = 'Initializing...';
+            
+            statusDiv.className = 'status-message status-loading';
+            statusDiv.textContent = 'Setting up your CRM system...';
+            
+            try {
+                const response = await fetch('/api/init/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.className = 'status-message status-success';
+                    statusDiv.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        ${data.message}<br>
+                        Firebase: ${data.firebase_enabled ? 'Connected' : 'Disabled'}<br>
+                        <small>You can now login with Google OAuth or demo account</small>
+                    `;
+                    btn.textContent = '✓ Initialized';
+                } else {
+                    throw new Error(data.error || 'Initialization failed');
+                }
+            } catch (error) {
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = `
+                    <strong>❌ Error:</strong><br>
+                    ${error.message}<br>
+                    <small>Please check your Firebase configuration</small>
+                `;
+                btn.disabled = false;
+                btn.textContent = 'Retry Initialization';
+            }
+        }
+        
+        function loginAsDemo() {
+            alert('Demo login will be available after system initialization. Please initialize the system first, then use Google OAuth to login.');
+        }
+        
+        // Check if system needs initialization on page load
+        window.addEventListener('load', function() {
+            // You can add logic here to check if system is already initialized
+        });
+    </script>
 </body>
 </html>

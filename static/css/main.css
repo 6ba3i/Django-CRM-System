@@ -1,4 +1,4 @@
- /* Glassmorphism styles 
+/* Glassmorphism styles 
    Primary Colors: Deep Navy (#1a1d29), Soft Blue (#4a90e2), Mint Green (#50c878)
    Glass Effects: Semi-transparent backgrounds (rgba(255,255,255,0.1))
    Typography: Inter/Poppins from Google Fonts
@@ -58,6 +58,203 @@ body::before {
     0%, 100% { transform: translate(0, 0) rotate(0deg); }
     33% { transform: translate(-20px, -20px) rotate(1deg); }
     66% { transform: translate(20px, -10px) rotate(-1deg); }
+}
+
+/* LOGIN PAGE STYLES */
+.login-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    margin: 50px auto;
+}
+
+.logo {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #4a90e2, #50c878);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.tagline {
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 40px;
+    font-size: 16px;
+}
+
+.google-btn {
+    width: 100%;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a1d29;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    margin-bottom: 24px;
+}
+
+.google-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 1);
+}
+
+.google-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 32px 0;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.divider span {
+    padding: 0 16px;
+    font-size: 14px;
+}
+
+.demo-login {
+    width: 100%;
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: block;
+}
+
+.demo-login:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+.initialization-panel {
+    margin-top: 32px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.init-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #50c878;
+}
+
+.init-description {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.init-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #50c878, #4a90e2);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.init-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.init-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.status-message {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.status-success {
+    background: rgba(80, 200, 120, 0.2);
+    color: #50c878;
+    border: 1px solid rgba(80, 200, 120, 0.3);
+}
+
+.status-error {
+    background: rgba(255, 59, 48, 0.2);
+    color: #ff3b30;
+    border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+.status-loading {
+    background: rgba(74, 144, 226, 0.2);
+    color: #4a90e2;
+    border: 1px solid rgba(74, 144, 226, 0.3);
+}
+
+.features {
+    margin-top: 24px;
+    text-align: left;
+}
+
+.feature-list {
+    list-style: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+.feature-list li {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feature-list li::before {
+    content: "✓";
+    color: #50c878;
+    font-weight: bold;
 }
 
 /* Glass Panel Base */
@@ -438,6 +635,12 @@ body::before {
     
     .main-content {
         margin-left: 0;
+    }
+    
+    .login-container {
+        margin: 20px;
+        padding: 30px 20px;
+        max-width: none;
     }
 }
 
