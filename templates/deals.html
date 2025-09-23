@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Deals{% endblock %}
+{% block page_title %}Deal Management{% endblock %}
+
+{% block content %}
+<!-- Add Deal Form -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Deal</h2>
+    <form method="post" action="{% url 'add_deal' %}">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <input type="text" name="title" placeholder="Deal Title" class="glass-input" required>
+            <select name="customer" class="glass-select" required>
+                <option value="">Select Customer</option>
+                {% for customer in customers %}
+                <option value="{{ customer.name }}">{{ customer.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="value" placeholder="Deal Value ($)" class="glass-input" min="0" required>
+            <select name="stage" class="glass-select">
+                {% for stage in stages %}
+                <option value="{{ stage }}">{{ stage }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="probability" placeholder="Probability (%)" class="glass-input" min="0" max="100" value="50">
+            <input type="date" name="expected_close" placeholder="Expected Close" class="glass-input">
+        </div>
+        <div style="margin-top: 16px;">
+            <textarea name="notes" placeholder="Notes..." class="glass-input" rows="3" style="width: 100%;"></textarea>
+        </div>
+        <button type="submit" class="glass-btn primary" style="margin-top: 16px;">Add Deal</button>
+    </form>
+</div>
+
+<!-- Pipeline Metrics -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <div class="glass-card">
+        <div style="font-size: 24px; font-weight: 700; color: #4a90e2;">${{ pipeline_metrics.total_value|floatformat:0 }}</div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Pipeline Value</div>
+    </div>
+    <div class="glass-card">
+        <div style="font-size: 24px; font-weight: 700; color: #50c878;">${{ pipeline_metrics.weighted_value|floatformat:0 }}</div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Weighted Value</div>
+    </div>
+</div>
+
+<!-- Deal List -->
+<div class="glass-panel">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Active Deals</h2>
+    <div class="glass-table">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Customer</th>
+                    <th>Value</th>
+                    <th>Stage</th>
+                    <th>Probability</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deal in deals %}
+                <tr>
+                    <td>{{ deal.title }}</td>
+                    <td>{{ deal.customer }}</td>
+                    <td>${{ deal.value|default:"0" }}</td>
+                    <td>
+                        <span style="padding: 4px 8px; background: rgba(80, 200, 120, 0.2); border-radius: 4px;">
+                            {{ deal.stage }}
+                        </span>
+                    </td>
+                    <td>{{ deal.probability }}%</td>
+                    <td>
+                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No deals found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pipeline by Stage -->
+<div class="glass-panel" style="margin-top: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Pipeline by Stage</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+        {% for stage, data in pipeline_metrics.by_stage.items %}
+        <div class="glass-card">
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 8px;">{{ stage }}</div>
+            <div style="font-size: 20px; font-weight: 600;">{{ data.count }} deals</div>
+            <div style="font-size: 14px; color: #50c878;">${{ data.value|floatformat:0 }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

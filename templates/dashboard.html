@@ -3,277 +3,189 @@
 
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}Real-time insights and analytics{% endblock %}
 
 {% block content %}
-<!-- Metrics Cards Row -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 32px;">
-    <!-- Total Customers Card -->
-    <div class="glass-card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(74, 144, 226, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+<style>
+    /* Additional glassmorphism effects */
+    .metric-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.18);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px 0 rgba(31, 38, 135, 0.5);
+        background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+    }
+    
+    .chart-container {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: inset 0 0 20px rgba(255,255,255,0.05);
+    }
+</style>
+
+<!-- Animated Metrics Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
+    <!-- Total Customers -->
+    <div class="metric-card glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #4a90e2, #6ba3f0); border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);">
+                <svg width="24" height="24" fill="white">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
             </div>
-            <span style="font-size: 12px; color: #50c878; background: rgba(80, 200, 120, 0.2); padding: 4px 8px; border-radius: 6px;">
-                +{{ metrics.customer_growth_rate|floatformat:1 }}%
+            <span style="background: linear-gradient(135deg, #50c878, #3da863); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                +{{ metrics.customers.new }} New
             </span>
         </div>
-        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">{{ metrics.total_customers|default:"0" }}</div>
-        <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Total Customers</div>
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <span style="font-size: 12px; color: rgba(255,255,255,0.5);">New this {{ metrics.period }}: </span>
-            <span style="font-size: 14px; font-weight: 500;">{{ metrics.new_customers|default:"0" }}</span>
+        <div style="font-size: 36px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, #fff, #e0e0e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            {{ metrics.customers.total }}
+        </div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Customers</div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: rgba(255,255,255,0.6);">Active:</span>
+                <span style="font-weight: 600; color: #50c878;">{{ metrics.customers.active }}</span>
+            </div>
         </div>
     </div>
     
-    <!-- Active Deals Card -->
-    <div class="glass-card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(80, 200, 120, 0.2), rgba(80, 200, 120, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#50c878" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
+    <!-- Total Deals -->
+    <div class="metric-card glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #50c878, #3da863); border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(80, 200, 120, 0.4);">
+                <svg width="24" height="24" fill="white">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
             </div>
-            <span style="font-size: 12px; color: #4a90e2;">Pipeline</span>
+            <span style="background: linear-gradient(135deg, #4a90e2, #3a7bc8); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                {{ metrics.deals.won }} Won
+            </span>
         </div>
-        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">{{ metrics.active_deals|default:"0" }}</div>
-        <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Active Deals</div>
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <span style="font-size: 12px; color: rgba(255,255,255,0.5);">Pipeline Value: </span>
-            <span style="font-size: 14px; font-weight: 500;">${{ metrics.pipeline_value|floatformat:0 }}</span>
+        <div style="font-size: 36px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, #fff, #e0e0e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            {{ metrics.deals.total }}
+        </div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Active Deals</div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: rgba(255,255,255,0.6);">Pipeline:</span>
+                <span style="font-weight: 600; color: #ffd700;">${{ metrics.deals.pipeline_value|floatformat:0 }}</span>
+            </div>
         </div>
     </div>
     
-    <!-- Revenue Card -->
-    <div class="glass-card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
-                    <line x1="12" y1="1" x2="12" y2="23"/>
-                    <polyline points="17 5 12 10 7 5"/>
-                    <polyline points="17 19 12 14 7 19"/>
+    <!-- Total Revenue -->
+    <div class="metric-card glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ffd700, #ffed4e); border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">
+                <svg width="24" height="24" fill="white">
+                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
                 </svg>
             </div>
-            <span style="font-size: 12px; color: #ffd700;">{{ metrics.period|title }}</span>
+            <span style="background: linear-gradient(135deg, #8a2be2, #9d4edd); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                This Month
+            </span>
         </div>
-        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">${{ metrics.total_revenue|floatformat:0 }}</div>
-        <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Total Revenue</div>
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <span style="font-size: 12px; color: rgba(255,255,255,0.5);">Avg Deal Size: </span>
-            <span style="font-size: 14px; font-weight: 500;">${{ metrics.average_deal_size|floatformat:0 }}</span>
+        <div style="font-size: 36px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, #fff, #e0e0e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            ${{ metrics.revenue|floatformat:0 }}
+        </div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Revenue</div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: rgba(255,255,255,0.6);">Target:</span>
+                <span style="font-weight: 600;">$100,000</span>
+            </div>
         </div>
     </div>
     
-    <!-- Win Rate Card -->
-    <div class="glass-card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(138, 43, 226, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8a2be2" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"/>
+    <!-- Employees -->
+    <div class="metric-card glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #8a2be2, #9d4edd); border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);">
+                <svg width="24" height="24" fill="white">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
                 </svg>
             </div>
-            <span style="font-size: 12px; color: #8a2be2;">Success</span>
+            <span style="background: linear-gradient(135deg, #00bcd4, #26c6da); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                {{ metrics.employees.departments }} Depts
+            </span>
         </div>
-        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">{{ metrics.win_rate|floatformat:1 }}%</div>
-        <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Win Rate</div>
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <span style="font-size: 12px; color: rgba(255,255,255,0.5);">Won: </span>
-            <span style="font-size: 14px; font-weight: 500; color: #50c878;">{{ metrics.won_deals }}</span>
-            <span style="margin-left: 12px; font-size: 12px; color: rgba(255,255,255,0.5);">Lost: </span>
-            <span style="font-size: 14px; font-weight: 500; color: #ff3b30;">{{ metrics.lost_deals }}</span>
+        <div style="font-size: 36px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, #fff, #e0e0e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            {{ metrics.employees.total }}
+        </div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Employees</div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: rgba(255,255,255,0.6);">Departments:</span>
+                <span style="font-weight: 600;">{{ metrics.employees.departments }}</span>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Charts Row -->
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px;">
-    <!-- Sales Pipeline Funnel -->
-    <div class="glass-panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="font-size: 18px; font-weight: 600;">Sales Pipeline</h2>
-            <div style="display: flex; gap: 12px;">
-                <button class="glass-btn secondary" style="padding: 8px 16px; font-size: 14px;">Week</button>
-                <button class="glass-btn primary" style="padding: 8px 16px; font-size: 14px;">Month</button>
-                <button class="glass-btn secondary" style="padding: 8px 16px; font-size: 14px;">Quarter</button>
-            </div>
-        </div>
-        <div class="chart-container" style="height: 300px;">
-            <canvas id="pipelineChart" data-counts="{{ pipeline_counts }}"></canvas>
-        </div>
+<!-- Charts Grid -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
+    <!-- Customer Status Chart -->
+    <div class="chart-container">
+        <h3 style="font-size: 18px; margin-bottom: 20px; color: #fff;">Customer Status Distribution</h3>
+        {% if charts.customer_status %}
+        <img src="data:image/png;base64,{{ charts.customer_status }}" style="width: 100%; height: auto;">
+        {% endif %}
     </div>
     
-    <!-- Top Deals -->
-    <div class="glass-panel">
-        <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">Top Deals</h2>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            {% for deal in top_deals %}
-            <div class="glass-card" style="padding: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                        <div style="font-weight: 500; margin-bottom: 4px;">{{ deal.title }}</div>
-                        <div style="font-size: 12px; color: rgba(255,255,255,0.5);">{{ deal.customer.name }}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-weight: 600; color: #50c878;">${{ deal.value|floatformat:0 }}</div>
-                        <div style="font-size: 11px; padding: 2px 6px; background: rgba(74, 144, 226, 0.2); border-radius: 4px; margin-top: 4px;">
-                            {{ deal.stage }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.5);">
-                No deals yet
-            </div>
-            {% endfor %}
-        </div>
+    <!-- Deal Pipeline Chart -->
+    <div class="chart-container">
+        <h3 style="font-size: 18px; margin-bottom: 20px; color: #fff;">Deal Pipeline Stages</h3>
+        {% if charts.deal_stages %}
+        <img src="data:image/png;base64,{{ charts.deal_stages }}" style="width: 100%; height: auto;">
+        {% endif %}
     </div>
 </div>
 
-<!-- Revenue Forecast & Activities -->
-<div style="display: grid; grid-template-columns: 3fr 2fr; gap: 24px; margin-bottom: 32px;">
-    <!-- Revenue Trend -->
-    <div class="glass-panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="font-size: 18px; font-weight: 600;">Revenue Trend</h2>
-            <select class="glass-select" style="width: 120px;">
-                <option>Last 6 Months</option>
-                <option>Last 12 Months</option>
-                <option>This Year</option>
-            </select>
-        </div>
-        <div class="chart-container" style="height: 250px;">
-            <canvas id="revenueChart" data-labels="{{ revenue_labels }}" data-values="{{ revenue_values }}"></canvas>
-        </div>
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Revenue Timeline -->
+    <div class="chart-container">
+        <h3 style="font-size: 18px; margin-bottom: 20px; color: #fff;">Revenue Trend</h3>
+        {% if charts.revenue_timeline %}
+        <img src="data:image/png;base64,{{ charts.revenue_timeline }}" style="width: 100%; height: auto;">
+        {% endif %}
     </div>
     
-    <!-- Recent Activities -->
-    <div class="glass-panel">
-        <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">Recent Activities</h2>
-        <div style="display: flex; flex-direction: column; gap: 16px; max-height: 250px; overflow-y: auto;">
-            {% for activity in recent_activities %}
-            <div style="display: flex; gap: 12px;">
-                <div style="width: 40px; height: 40px; background: rgba(74, 144, 226, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    {% if activity.type == 'Deal' %}
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 6v6l4 2"/>
-                    </svg>
-                    {% elif activity.type == 'Customer' %}
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#50c878" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    {% else %}
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    {% endif %}
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-size: 14px; margin-bottom: 2px;">{{ activity.description }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.5);">
-                        {{ activity.user }} • {{ activity.time_ago }}
-                    </div>
-                </div>
+    <!-- Department Distribution -->
+    <div class="chart-container">
+        <h3 style="font-size: 18px; margin-bottom: 20px; color: #fff;">Employees by Department</h3>
+        {% if charts.department_distribution %}
+        <img src="data:image/png;base64,{{ charts.department_distribution }}" style="width: 100%; height: auto;">
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="glass-panel" style="margin-top: 40px;">
+    <h3 style="font-size: 18px; margin-bottom: 20px;">Recent Activities</h3>
+    <div style="display: grid; gap: 12px;">
+        {% for activity in activities %}
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4a90e2, #50c878); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" fill="white">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
             </div>
-            {% empty %}
-            <div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.5);">
-                No recent activities
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">{{ activity.message }}</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px;">{{ activity.time }}</div>
             </div>
-            {% endfor %}
         </div>
+        {% empty %}
+        <p style="text-align: center; color: rgba(255,255,255,0.5);">No recent activities</p>
+        {% endfor %}
     </div>
 </div>
-
-<!-- Team Performance -->
-<div class="glass-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 18px; font-weight: 600;">Team Performance</h2>
-        <a href="{% url 'team_performance' %}" class="glass-btn secondary" style="padding: 8px 16px; font-size: 14px;">View All</a>
-    </div>
-    <div class="glass-table">
-        <table style="width: 100%;">
-            <thead>
-                <tr>
-                    <th>Sales Rep</th>
-                    <th>Deals</th>
-                    <th>Revenue</th>
-                    <th>Win Rate</th>
-                    <th>Avg Deal Size</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for member in team_performance %}
-                <tr>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4a90e2, #50c878); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">
-                                {{ member.user.get_full_name|first|upper }}
-                            </div>
-                            <span>{{ member.user.get_full_name|default:member.user.username }}</span>
-                        </div>
-                    </td>
-                    <td>{{ member.total_deals }}</td>
-                    <td style="font-weight: 600; color: #50c878;">${{ member.total_revenue|floatformat:0 }}</td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 60px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
-                                <div class="win-rate-bar" data-rate="{{ member.win_rate }}" style="height: 100%; background: linear-gradient(90deg, #4a90e2, #50c878);"></div>
-                            </div>
-                            <span style="font-size: 12px;">{{ member.win_rate|floatformat:0 }}%</span>
-                        </div>
-                    </td>
-                    <td>${{ member.avg_deal_size|floatformat:0 }}</td>
-                    <td>
-                        <span style="font-size: 12px; padding: 4px 8px; background: rgba(80, 200, 120, 0.2); color: #50c878; border-radius: 4px;">Active</span>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px;">No team data available</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Initialize dashboard-specific features
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set win rate bar widths
-        document.querySelectorAll('.win-rate-bar').forEach(function(bar) {
-            const rate = bar.dataset.rate;
-            bar.style.width = rate + '%';
-        });
-        
-        // Auto-refresh metrics every 5 minutes
-        setInterval(async () => {
-            try {
-                const response = await fetch('/api/dashboard-metrics/');
-                if (response.ok) {
-                    const data = await response.json();
-                    updateDashboardMetrics(data);
-                }
-            } catch (error) {
-                console.error('Error updating metrics:', error);
-            }
-        }, 300000);
-    });
-    
-    function updateDashboardMetrics(data) {
-        // Update metric cards with new data
-        // This would update the DOM elements with fresh data
-        console.log('Updating dashboard metrics:', data);
-    }
-</script>
 {% endblock %}

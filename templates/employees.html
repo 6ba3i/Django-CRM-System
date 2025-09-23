@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employees{% endblock %}
+{% block page_title %}Employee Management{% endblock %}
+
+{% block content %}
+<!-- Add Employee Form -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Employee</h2>
+    <form method="post" action="{% url 'add_employee' %}">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <input type="text" name="name" placeholder="Name" class="glass-input" required>
+            <input type="email" name="email" placeholder="Email" class="glass-input" required>
+            <input type="text" name="department" placeholder="Department" class="glass-input" required>
+            <input type="text" name="role" placeholder="Role" class="glass-input" required>
+            <input type="number" name="salary" placeholder="Salary" class="glass-input" min="0">
+            <input type="date" name="hire_date" class="glass-input">
+        </div>
+        <div style="margin-top: 16px;">
+            <input type="text" name="skills" placeholder="Skills (comma-separated)" class="glass-input" style="width: 100%;">
+        </div>
+        <button type="submit" class="glass-btn primary" style="margin-top: 16px;">Add Employee</button>
+    </form>
+</div>
+
+<!-- Employee List -->
+<div class="glass-panel">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Employee List</h2>
+    <div class="glass-table">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th>Salary</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                <tr>
+                    <td>{{ employee.name }}</td>
+                    <td>{{ employee.email }}</td>
+                    <td>{{ employee.department }}</td>
+                    <td>{{ employee.role }}</td>
+                    <td>${{ employee.salary|default:"0" }}</td>
+                    <td>
+                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No employees found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Department Summary -->
+<div class="glass-panel" style="margin-top: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Department Summary</h2>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        {% for dept in departments %}
+        <div class="glass-card">
+            <div style="font-size: 18px; font-weight: 600; color: #4a90e2;">{{ dept }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    <div style="margin-top: 20px;">
+        <p>Total Salary Budget: <strong>${{ total_salary|floatformat:0 }}</strong></p>
+    </div>
+</div>
+{% endblock %}
