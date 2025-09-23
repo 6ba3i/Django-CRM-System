@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Modern CRM</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .login-form {
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .glass-input {
+            padding-left: 45px;
+            width: 100%;
+            padding-top: 12px;
+            padding-bottom: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .glass-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #4a90e2, #50c878);
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.6);
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container login-form">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <div style="font-size: 48px; margin-bottom: 10px;">✨</div>
+            <div class="logo" style="font-size: 32px; background: linear-gradient(135deg, #4a90e2, #50c878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Modern CRM</div>
+            <p class="tagline" style="color: rgba(255, 255, 255, 0.6);">Firebase-Powered Business Management</p>
+        </div>
+        
+        <h1 style="text-align: center; margin-bottom: 30px; color: white;">Welcome Back</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="glass-panel" style="padding: 12px; margin-bottom: 20px; text-align: center; border-radius: 10px; background: rgba(255, 255, 255, 0.1);">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="input-group">
+                <span class="input-icon">📧</span>
+                <input type="email" name="email" placeholder="Email address" class="glass-input" required>
+            </div>
+            
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" name="password" placeholder="Password" class="glass-input" required>
+            </div>
+            
+            <button type="submit" class="submit-btn">Sign In</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{% url 'signup' %}" style="color: rgba(255,255,255,0.8); text-decoration: none;">
+                Don't have an account? <span style="color: #4a90e2; font-weight: 600;">Sign Up</span>
+            </a>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <p style="color: rgba(255, 255, 255, 0.5); font-size: 14px;">Demo Account:</p>
+            <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px;">Email: admin@crm.com</p>
+            <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px;">Password: admin123</p>
+        </div>
+    </div>
+</body>
+</html>

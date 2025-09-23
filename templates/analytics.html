@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 32px;">
+    <div class="glass-card">
+        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Total Records</h3>
+        <div style="font-size: 32px; font-weight: 700;">{{ stats.total_records }}</div>
+    </div>
+    
+    <div class="glass-card">
+        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Unique Emails</h3>
+        <div style="font-size: 32px; font-weight: 700;">{{ stats.unique_emails }}</div>
+    </div>
+    
+    <div class="glass-card">
+        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Average Value</h3>
+        <div style="font-size: 32px; font-weight: 700;">${{ stats.average_value|floatformat:2 }}</div>
+    </div>
+    
+    <div class="glass-card">
+        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Status Breakdown</h3>
+        {% for status, count in stats.status_counts.items %}
+        <div style="font-size: 14px; margin: 4px 0;">{{ status }}: {{ count }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Charts -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+    <!-- Status Distribution -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px;">Status Distribution</h2>
+        {% if charts.status_distribution %}
+        <img src="data:image/png;base64,{{ charts.status_distribution }}" style="width: 100%; height: auto;">
+        {% else %}
+        <p>No data available</p>
+        {% endif %}
+    </div>
+    
+    <!-- Value Comparison -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px;">Top Customers by Value</h2>
+        {% if charts.value_comparison %}
+        <img src="data:image/png;base64,{{ charts.value_comparison }}" style="width: 100%; height: auto;">
+        {% else %}
+        <p>No data available</p>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Growth Timeline -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px;">Customer Growth Timeline</h2>
+        {% if charts.growth_timeline %}
+        <img src="data:image/png;base64,{{ charts.growth_timeline }}" style="width: 100%; height: auto;">
+        {% else %}
+        <p>No data available</p>
+        {% endif %}
+    </div>
+    
+    <!-- Company Breakdown -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px;">Customers by Company</h2>
+        {% if charts.company_breakdown %}
+        <img src="data:image/png;base64,{{ charts.company_breakdown }}" style="width: 100%; height: auto;">
+        {% else %}
+        <p>No data available</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

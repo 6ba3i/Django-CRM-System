@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tasks{% endblock %}
+{% block page_title %}Task Management{% endblock %}
+
+{% block content %}
+<!-- Add Task Form -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Task</h2>
+    <form method="post" action="{% url 'add_task' %}">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <input type="text" name="title" placeholder="Task Title" class="glass-input" required>
+            <select name="assigned_to" class="glass-select">
+                <option value="">Assign To</option>
+                {% for employee in employees %}
+                <option value="{{ employee.name }}">{{ employee.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="due_date" class="glass-input">
+            <select name="priority" class="glass-select">
+                {% for priority in priorities %}
+                <option value="{{ priority }}">{{ priority }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="glass-select">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+        <div style="margin-top: 16px;">
+            <textarea name="description" placeholder="Description..." class="glass-input" rows="3" style="width: 100%;"></textarea>
+        </div>
+        <button type="submit" class="glass-btn primary" style="margin-top: 16px;">Add Task</button>
+    </form>
+</div>
+
+<!-- Task Metrics -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <div style="display: flex; gap: 20px;">
+        <div>Overdue Tasks: <strong style="color: #ff6b6b;">{{ overdue_count }}</strong></div>
+        <div>Total Tasks: <strong>{{ tasks|length }}</strong></div>
+    </div>
+</div>
+
+<!-- Task List -->
+<div class="glass-panel">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Task List</h2>
+    <div class="glass-table">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Assigned To</th>
+                    <th>Due Date</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr id="task-{{ task.id }}">
+                    <td>{{ task.title }}</td>
+                    <td>{{ task.assigned_to|default:"-" }}</td>
+                    <td>{{ task.due_date|default:"-" }}</td>
+                    <td>
+                        <span style="padding: 4px 8px; background: {% if task.priority == 'High' %}rgba(255, 107, 107, 0.2){% elif task.priority == 'Medium' %}rgba(255, 215, 0, 0.2){% else %}rgba(74, 144, 226, 0.2){% endif %}; border-radius: 4px;">
+                            {{ task.priority }}
+                        </span>
+                    </td>
+                    <td class="task-status">{{ task.status }}</td>
+                    <td>
+                        {% if task.status != 'Completed' %}
+                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="completeTask('{{ task.id }}')">Complete</button>
+                        {% else %}
+                        <span style="color: #50c878;">✓ Done</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No tasks found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function completeTask(taskId) {
+    fetch(`/api/tasks/${taskId}/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: new URLSearchParams({status: 'Completed'})
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            window.location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %}

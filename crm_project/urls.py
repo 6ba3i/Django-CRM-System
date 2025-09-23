@@ -1,6 +1,5 @@
-# Main URL routing
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views
@@ -8,27 +7,29 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Authentication URLs (Google OAuth)
-    path('accounts/', include('allauth.urls')),
+    # Authentication
+    path('login/', views.login_view, name='login'),
+    path('signup/', views.signup_view, name='signup'),
+    path('logout/', views.logout_view, name='logout'),
     
-    # Main dashboard
+    # Main pages
     path('', views.dashboard_view, name='dashboard'),
+    path('customers/', views.customers_view, name='customers'),
+    path('employees/', views.employees_view, name='employees'),
+    path('deals/', views.deals_view, name='deals'),
+    path('tasks/', views.tasks_view, name='tasks'),
+    path('analytics/', views.analytics_view, name='analytics'),
     
-    # App URLs
-    path('customers/', include('customers.urls')),
-    path('sales/', include('sales.urls')),
-    path('analytics/', include('analytics.urls')),
+    # CRUD operations
+    path('api/customer/add/', views.add_customer, name='add_customer'),
+    path('api/employee/add/', views.add_employee, name='add_employee'),
+    path('api/deal/add/', views.add_deal, name='add_deal'),
+    path('api/task/add/', views.add_task, name='add_task'),
     
-    # API endpoints
-    path('api/dashboard-metrics/', views.dashboard_metrics_api, name='dashboard_metrics_api'),
-    path('api/notifications/', views.notifications_api, name='notifications_api'),
-    path('api/init/', views.initialize_system, name='initialize_system'),
-    
-    # Profile management
-    path('profile/', views.profile_view, name='profile'),
+    # Generic update and delete
+    path('api/<str:collection>/<str:doc_id>/update/', views.update_record, name='update_record'),
+    path('api/<str:collection>/<str:doc_id>/delete/', views.delete_record, name='delete_record'),
 ]
 
-# Serve media files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

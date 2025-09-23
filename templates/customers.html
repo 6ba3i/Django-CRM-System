@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Customers{% endblock %}
+{% block page_title %}Customer Management{% endblock %}
+
+{% block content %}
+<!-- Add Customer Form -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Customer</h2>
+    <form method="post" action="{% url 'add_customer' %}">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <input type="text" name="name" placeholder="Name" class="glass-input" required>
+            <input type="email" name="email" placeholder="Email" class="glass-input" required>
+            <input type="text" name="phone" placeholder="Phone" class="glass-input">
+            <input type="text" name="company" placeholder="Company" class="glass-input">
+            <select name="status" class="glass-select">
+                {% for status in statuses %}
+                <option value="{{ status }}">{{ status }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="value" placeholder="Value ($)" class="glass-input" step="0.01" min="0">
+        </div>
+        <div style="margin-top: 16px;">
+            <textarea name="notes" placeholder="Notes..." class="glass-input" rows="3" style="width: 100%;"></textarea>
+        </div>
+        <button type="submit" class="glass-btn primary" style="margin-top: 16px;">Add Customer</button>
+    </form>
+</div>
+
+<!-- Filter -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <div style="display: flex; gap: 16px; align-items: center;">
+        <label>Filter by Status:</label>
+        <select class="glass-select" onchange="window.location.href='?status=' + this.value" style="width: 200px;">
+            <option value="">All</option>
+            {% for status in statuses %}
+            <option value="{{ status }}" {% if current_filter == status %}selected{% endif %}>{{ status }}</option>
+            {% endfor %}
+        </select>
+        <span style="margin-left: auto;">Total: {{ customers|length }} customers</span>
+    </div>
+</div>
+
+<!-- Customer List -->
+<div class="glass-panel">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Customer List</h2>
+    <div class="glass-table">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Company</th>
+                    <th>Status</th>
+                    <th>Value</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr id="customer-{{ customer.id }}">
+                    <td class="customer-name">{{ customer.name }}</td>
+                    <td class="customer-email">{{ customer.email }}</td>
+                    <td class="customer-company">{{ customer.company|default:"-" }}</td>
+                    <td class="customer-status">
+                        <span style="padding: 4px 8px; background: rgba(74, 144, 226, 0.2); border-radius: 4px;">
+                            {{ customer.status }}
+                        </span>
+                    </td>
+                    <td class="customer-value">${{ customer.value|default:"0" }}</td>
+                    <td>
+                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="editCustomer('{{ customer.id }}')">Edit</button>
+                        <button class="glass-btn danger" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="deleteCustomer('{{ customer.id }}')">Delete</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No customers found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="glass-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000;">
+    <div class="glass-panel" style="max-width: 500px; margin: 100px auto; padding: 30px;">
+        <h2 style="margin-bottom: 20px;">Edit Customer</h2>
+        <form id="editForm">
+            <input type="hidden" id="edit-id">
+            <div style="display: grid; gap: 16px;">
+                <input type="text" id="edit-name" placeholder="Name" class="glass-input" required>
+                <input type="email" id="edit-email" placeholder="Email" class="glass-input" required>
+                <input type="text" id="edit-phone" placeholder="Phone" class="glass-input">
+                <input type="text" id="edit-company" placeholder="Company" class="glass-input">
+                <select id="edit-status" class="glass-select">
+                    {% for status in statuses %}
+                    <option value="{{ status }}">{{ status }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" id="edit-value" placeholder="Value ($)" class="glass-input" step="0.01" min="0">
+            </div>
+            <div style="display: flex; gap: 16px; margin-top: 20px;">
+                <button type="button" onclick="saveCustomer()" class="glass-btn primary">Save</button>
+                <button type="button" onclick="closeEditModal()" class="glass-btn secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="glass-panel" style="margin-top: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Statistics</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div class="glass-card">
+            <div style="font-size: 24px; font-weight: 700; color: #4a90e2;">{{ stats.total }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Customers</div>
+        </div>
+        <div class="glass-card">
+            <div style="font-size: 24px; font-weight: 700; color: #50c878;">${{ stats.total_value }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Value</div>
+        </div>
+        <div class="glass-card">
+            <div style="font-size: 24px; font-weight: 700; color: #ffd700;">{{ stats.unique_count }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Unique Companies</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function editCustomer(customerId) {
+    // Get current data from table
+    const row = document.getElementById(`customer-${customerId}`);
+    document.getElementById('edit-id').value = customerId;
+    document.getElementById('edit-name').value = row.querySelector('.customer-name').textContent;
+    document.getElementById('edit-email').value = row.querySelector('.customer-email').textContent;
+    document.getElementById('edit-company').value = row.querySelector('.customer-company').textContent === '-' ? '' : row.querySelector('.customer-company').textContent;
+    document.getElementById('edit-value').value = row.querySelector('.customer-value').textContent.replace('$', '');
+    
+    // Get status
+    const statusText = row.querySelector('.customer-status span').textContent.trim();
+    document.getElementById('edit-status').value = statusText;
+    
+    // Show modal
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+function saveCustomer() {
+    const customerId = document.getElementById('edit-id').value;
+    const data = {
+        name: document.getElementById('edit-name').value,
+        email: document.getElementById('edit-email').value,
+        phone: document.getElementById('edit-phone').value,
+        company: document.getElementById('edit-company').value,
+        status: document.getElementById('edit-status').value,
+        value: document.getElementById('edit-value').value
+    };
+    
+    fetch(`/api/customers/${customerId}/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: new URLSearchParams(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            window.location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function deleteCustomer(customerId) {
+    if (confirm('Are you sure you want to delete this customer?')) {
+        fetch(`/api/customers/${customerId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+</script>
+{% endblock %}

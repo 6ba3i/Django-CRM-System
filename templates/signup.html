@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Modern CRM</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .signup-form {
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .glass-input {
+            padding-left: 45px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #50c878, #4a90e2);
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(80, 200, 120, 0.4);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(80, 200, 120, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container signup-form">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🚀</div>
+            <div class="logo" style="font-size: 32px;">Modern CRM</div>
+            <p class="tagline">Create Your Account</p>
+        </div>
+        
+        <h1 style="text-align: center; margin-bottom: 30px;">Sign Up</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="glass-panel" style="padding: 12px; margin-bottom: 20px; text-align: center; border-radius: 10px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="input-group">
+                <span class="input-icon">👤</span>
+                <input type="text" name="name" placeholder="Full Name" class="glass-input" required>
+            </div>
+            
+            <div class="input-group">
+                <span class="input-icon">📧</span>
+                <input type="email" name="email" placeholder="Email address" class="glass-input" required>
+            </div>
+            
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" name="password" placeholder="Password" class="glass-input" required>
+            </div>
+            
+            <button type="submit" class="submit-btn">Create Account</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{% url 'login' %}" style="color: rgba(255,255,255,0.8); text-decoration: none;">
+                Already have an account? <span style="color: #4a90e2; font-weight: 600;">Sign In</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
