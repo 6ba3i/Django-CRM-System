@@ -1,15 +1,36 @@
-Django
-firebase-admin
-google-cloud-firestore
-djangorestframework
-django-cors-headers
-django-allauth
-python-decouple
-matplotlib
-pandas
-numpy
-Pillow
-gunicorn
-whitenoise
-pyrebase
-requests==2.11.1
+# Core Django Framework
+Django>=4.2,<5.1
+
+# Firebase Integration
+firebase-admin>=6.0.0
+google-cloud-firestore>=2.0.0
+pyrebase4>=4.0.0
+
+# API Framework
+djangorestframework>=3.14.0
+django-cors-headers>=4.0.0
+
+# Environment Management
+python-decouple>=3.6
+
+# Chart Generation & Analytics (Python 3.12 optimized)
+matplotlib>=3.7.0
+pandas>=2.0.0
+numpy>=1.24.0
+Pillow>=9.0.0
+
+# Production Deployment
+gunicorn>=20.0.0
+whitenoise>=6.0.0
+
+# HTTP Requests
+requests>=2.28.0
+
+# Date/Time Utilities
+python-dateutil>=2.8.0
+
+# Security
+cryptography>=40.0.0
+
+# Data Export
+openpyxl>=3.0.0
