@@ -1,58 +1,59 @@
-# Customer views and logic
-from django.shortcuts import render, redirect, get_object_or_404
+# Customer views and logic - Firebase Only
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
-from django.core.paginator import Paginator
-from django.db.models import Q, Count, Sum
 from django.contrib import messages
 from datetime import datetime, timedelta
 import json
 
-from .models import Customer, Interaction, CustomerTag
-from .forms import CustomerForm, InteractionForm, CustomerSearchForm
-from core.firebase_config import FirebaseManager
+from .models import CustomerSchema, InteractionSchema, CustomerTagSchema
+from core.firebase_config import FirebaseDB
 from core.decorators import role_required, log_activity, validate_json_request
-from core.utils import export_to_csv, export_to_pdf, paginate_results
+from core.utils import export_to_csv, export_to_pdf
 
 @login_required
 @log_activity('view_customers')
 def customer_list(request):
-    """Display list of customers with search and filtering"""
-    customers = Customer.objects.all()
+    """Display list of customers with search and filtering using Firebase"""
+    customers = FirebaseDB.get_records('customers')
     
     # Search functionality
     search_query = request.GET.get('search', '')
     if search_query:
-        customers = customers.filter(
-            Q(name__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(company__icontains=search_query)
-        )
+        customers = [c for c in customers if
+                    search_query.lower() in c.get('name', '').lower() or
+                    search_query.lower() in c.get('email', '').lower() or
+                    search_query.lower() in c.get('company', '').lower()]
     
     # Filter by status
     status_filter = request.GET.get('status', '')
     if status_filter:
-        customers = customers.filter(status=status_filter)
+        customers = [c for c in customers if c.get('status') == status_filter]
     
     # Filter by assigned user (for sales reps)
     if not request.user.is_staff:
-        customers = customers.filter(assigned_to=request.user)
+        user_email = request.user.email
+        customers = [c for c in customers if c.get('assigned_to') == user_email]
     
-    # Sorting
-    sort_by = request.GET.get('sort', '-created_date')
-    customers = customers.order_by(sort_by)
+    # Sort by created_date (newest first)
+    customers.sort(key=lambda x: x.get('created_date', ''), reverse=True)
     
-    # Pagination
-    paginator = Paginator(customers, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # Simple pagination
+    page = int(request.GET.get('page', 1))
+    page_size = 20
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    page_customers = customers[start_idx:end_idx]
     
     context = {
-        'customers': page_obj,
+        'customers': page_customers,
         'search_query': search_query,
         'status_filter': status_filter,
-        'total_count': customers.count(),
+        'total_count': len(customers),
+        'has_next': end_idx < len(customers),
+        'has_previous': start_idx > 0,
+        'page': page
     }
     
     return render(request, 'customers/customer_list.html', context)
@@ -60,29 +61,44 @@ def customer_list(request):
 @login_required
 @log_activity('view_customer_detail')
 def customer_detail(request, customer_id):
-    """Display detailed customer information"""
-    customer = get_object_or_404(Customer, id=customer_id)
+    """Display detailed customer information using Firebase"""
+    customers = FirebaseDB.get_records('customers')
+    customer = None
+    
+    # Find customer by ID
+    for c in customers:
+        if c.get('id') == customer_id:
+            customer = c
+            break
+    
+    if not customer:
+        messages.error(request, "Customer not found.")
+        return redirect('customer_list')
     
     # Check permissions
-    if not request.user.is_staff and customer.assigned_to != request.user:
+    if not request.user.is_staff and customer.get('assigned_to') != request.user.email:
         messages.error(request, "You don't have permission to view this customer.")
         return redirect('customer_list')
     
     # Get recent interactions
-    interactions = customer.interactions.all()[:10]
+    interactions = FirebaseDB.get_records('interactions')
+    customer_interactions = [i for i in interactions if i.get('customer_id') == customer_id]
+    customer_interactions.sort(key=lambda x: x.get('date', ''), reverse=True)
+    customer_interactions = customer_interactions[:10]
     
     # Get deals
-    deals = customer.deals.all()
+    deals = FirebaseDB.get_records('deals')
+    customer_deals = [d for d in deals if d.get('customer') == customer.get('name')]
     
     # Calculate metrics
-    total_value = sum(deal.value for deal in deals)
+    total_value = sum([d.get('value', 0) for d in customer_deals])
     
     context = {
         'customer': customer,
-        'interactions': interactions,
-        'deals': deals,
+        'interactions': customer_interactions,
+        'deals': customer_deals,
         'total_value': total_value,
-        'interaction_count': customer.interaction_count,
+        'interaction_count': len(customer_interactions),
     }
     
     return render(request, 'customers/customer_detail.html', context)
@@ -90,141 +106,269 @@ def customer_detail(request, customer_id):
 @login_required
 @log_activity('create_customer')
 def customer_create(request):
-    """Create a new customer"""
+    """Create a new customer using Firebase"""
     if request.method == 'POST':
-        form = CustomerForm(request.POST)
-        if form.is_valid():
-            customer = form.save(commit=False)
-            customer.assigned_to = request.user
-            customer.save()
-            
-            # Sync with Firebase
-            firebase_data = customer.to_firebase_dict()
-            firebase_id = FirebaseManager.create_customer(firebase_data)
-            customer.firebase_id = firebase_id
-            customer.save()
-            
-            messages.success(request, f"Customer '{customer.name}' created successfully!")
-            return redirect('customer_detail', customer_id=customer.id)
-    else:
-        form = CustomerForm()
+        customer_data = {
+            'name': request.POST.get('name'),
+            'email': request.POST.get('email'),
+            'phone': request.POST.get('phone', ''),
+            'company': request.POST.get('company', ''),
+            'status': request.POST.get('status', 'Lead'),
+            'assigned_to': request.user.email,
+            'notes': request.POST.get('notes', ''),
+            'tags': request.POST.getlist('tags'),
+            'address': request.POST.get('address', ''),
+            'city': request.POST.get('city', ''),
+            'state': request.POST.get('state', ''),
+            'zip_code': request.POST.get('zip_code', ''),
+            'country': request.POST.get('country', 'USA'),
+            'industry': request.POST.get('industry', ''),
+            'company_size': request.POST.get('company_size', ''),
+            'website': request.POST.get('website', ''),
+            'lead_source': request.POST.get('lead_source', '')
+        }
+        
+        # Validate
+        is_valid, error_msg = CustomerSchema.validate_customer(customer_data)
+        if not is_valid:
+            messages.error(request, f"❌ {error_msg}")
+            return render(request, 'customers/customer_form.html', {
+                'form_data': customer_data,
+                'action': 'Create',
+                'statuses': CustomerSchema.STATUS_CHOICES
+            })
+        
+        # Check for duplicate email
+        existing_customers = FirebaseDB.get_records('customers')
+        for existing in existing_customers:
+            if existing.get('email', '').lower() == customer_data['email'].lower():
+                messages.error(request, "❌ A customer with this email already exists.")
+                return render(request, 'customers/customer_form.html', {
+                    'form_data': customer_data,
+                    'action': 'Create',
+                    'statuses': CustomerSchema.STATUS_CHOICES
+                })
+        
+        # Create customer document
+        customer_doc = CustomerSchema.create_customer_document(customer_data)
+        doc_id = FirebaseDB.add_record('customers', customer_doc)
+        
+        if doc_id:
+            messages.success(request, f"✅ Customer '{customer_data['name']}' created successfully!")
+            return redirect('customer_detail', customer_id=doc_id)
+        else:
+            messages.error(request, "❌ Failed to create customer")
     
-    return render(request, 'customers/customer_form.html', {'form': form, 'action': 'Create'})
+    context = {
+        'action': 'Create',
+        'statuses': CustomerSchema.STATUS_CHOICES
+    }
+    
+    return render(request, 'customers/customer_form.html', context)
 
 @login_required
 @log_activity('update_customer')
 def customer_update(request, customer_id):
-    """Update customer information"""
-    customer = get_object_or_404(Customer, id=customer_id)
+    """Update customer information using Firebase"""
+    customers = FirebaseDB.get_records('customers')
+    customer = None
+    
+    # Find customer by ID
+    for c in customers:
+        if c.get('id') == customer_id:
+            customer = c
+            break
+    
+    if not customer:
+        messages.error(request, "Customer not found.")
+        return redirect('customer_list')
     
     # Check permissions
-    if not request.user.is_staff and customer.assigned_to != request.user:
+    if not request.user.is_staff and customer.get('assigned_to') != request.user.email:
         messages.error(request, "You don't have permission to edit this customer.")
         return redirect('customer_list')
     
     if request.method == 'POST':
-        form = CustomerForm(request.POST, instance=customer)
-        if form.is_valid():
-            customer = form.save()
-            
-            # Sync with Firebase
-            if customer.firebase_id:
-                firebase_data = customer.to_firebase_dict()
-                FirebaseManager.update_customer(customer.firebase_id, firebase_data)
-            
-            messages.success(request, f"Customer '{customer.name}' updated successfully!")
-            return redirect('customer_detail', customer_id=customer.id)
-    else:
-        form = CustomerForm(instance=customer)
+        update_data = {
+            'name': request.POST.get('name'),
+            'email': request.POST.get('email'),
+            'phone': request.POST.get('phone', ''),
+            'company': request.POST.get('company', ''),
+            'status': request.POST.get('status'),
+            'notes': request.POST.get('notes', ''),
+            'tags': request.POST.getlist('tags'),
+            'address': request.POST.get('address', ''),
+            'city': request.POST.get('city', ''),
+            'state': request.POST.get('state', ''),
+            'zip_code': request.POST.get('zip_code', ''),
+            'country': request.POST.get('country', 'USA'),
+            'industry': request.POST.get('industry', ''),
+            'company_size': request.POST.get('company_size', ''),
+            'website': request.POST.get('website', ''),
+            'lead_source': request.POST.get('lead_source', ''),
+            'updated_date': datetime.now().isoformat()
+        }
+        
+        # Validate
+        is_valid, error_msg = CustomerSchema.validate_customer(update_data)
+        if not is_valid:
+            messages.error(request, f"❌ {error_msg}")
+            return render(request, 'customers/customer_form.html', {
+                'customer': customer,
+                'action': 'Update',
+                'statuses': CustomerSchema.STATUS_CHOICES
+            })
+        
+        # Check for duplicate email (excluding current customer)
+        all_customers = FirebaseDB.get_records('customers')
+        for existing in all_customers:
+            if (existing.get('id') != customer_id and 
+                existing.get('email', '').lower() == update_data['email'].lower()):
+                messages.error(request, "❌ Another customer with this email already exists.")
+                return render(request, 'customers/customer_form.html', {
+                    'customer': customer,
+                    'action': 'Update',
+                    'statuses': CustomerSchema.STATUS_CHOICES
+                })
+        
+        # Update in Firebase
+        success = FirebaseDB.update_record('customers', customer_id, update_data)
+        
+        if success:
+            messages.success(request, f"✅ Customer '{update_data['name']}' updated successfully!")
+            return redirect('customer_detail', customer_id=customer_id)
+        else:
+            messages.error(request, "❌ Failed to update customer")
     
-    return render(request, 'customers/customer_form.html', {
-        'form': form,
+    context = {
+        'customer': customer,
         'action': 'Update',
-        'customer': customer
-    })
+        'statuses': CustomerSchema.STATUS_CHOICES
+    }
+    
+    return render(request, 'customers/customer_form.html', context)
 
 @login_required
 @role_required('Admin', 'Manager')
 @log_activity('delete_customer')
 def customer_delete(request, customer_id):
-    """Delete a customer"""
-    customer = get_object_or_404(Customer, id=customer_id)
+    """Delete a customer using Firebase"""
+    customers = FirebaseDB.get_records('customers')
+    customer = None
+    
+    # Find customer by ID
+    for c in customers:
+        if c.get('id') == customer_id:
+            customer = c
+            break
+    
+    if not customer:
+        messages.error(request, "Customer not found.")
+        return redirect('customer_list')
     
     if request.method == 'POST':
-        # Delete from Firebase
-        if customer.firebase_id:
-            FirebaseManager.delete_customer(customer.firebase_id)
+        success = FirebaseDB.delete_record('customers', customer_id)
         
-        customer_name = customer.name
-        customer.delete()
-        
-        messages.success(request, f"Customer '{customer_name}' deleted successfully!")
-        return redirect('customer_list')
+        if success:
+            customer_name = customer.get('name', 'Unknown')
+            messages.success(request, f"✅ Customer '{customer_name}' deleted successfully!")
+            return redirect('customer_list')
+        else:
+            messages.error(request, "❌ Failed to delete customer")
     
     return render(request, 'customers/customer_confirm_delete.html', {'customer': customer})
 
 @login_required
 @log_activity('add_interaction')
 def interaction_add(request, customer_id):
-    """Add a new interaction for a customer"""
-    customer = get_object_or_404(Customer, id=customer_id)
+    """Add a new interaction for a customer using Firebase"""
+    customers = FirebaseDB.get_records('customers')
+    customer = None
+    
+    # Find customer by ID
+    for c in customers:
+        if c.get('id') == customer_id:
+            customer = c
+            break
+    
+    if not customer:
+        messages.error(request, "Customer not found.")
+        return redirect('customer_list')
     
     # Check permissions
-    if not request.user.is_staff and customer.assigned_to != request.user:
+    if not request.user.is_staff and customer.get('assigned_to') != request.user.email:
         messages.error(request, "You don't have permission to add interactions for this customer.")
         return redirect('customer_list')
     
     if request.method == 'POST':
-        form = InteractionForm(request.POST)
-        if form.is_valid():
-            interaction = form.save(commit=False)
-            interaction.customer = customer
-            interaction.created_by = request.user
-            interaction.save()
-            
-            # Sync with Firebase
-            firebase_data = interaction.to_firebase_dict()
-            firebase_id = FirebaseManager.create_interaction(firebase_data)
-            interaction.firebase_id = firebase_id
-            interaction.save()
-            
-            messages.success(request, "Interaction added successfully!")
-            return redirect('customer_detail', customer_id=customer.id)
-    else:
-        form = InteractionForm()
+        interaction_data = {
+            'customer_id': customer_id,
+            'created_by': request.user.email,
+            'type': request.POST.get('type'),
+            'subject': request.POST.get('subject'),
+            'description': request.POST.get('description'),
+            'date': request.POST.get('date') or datetime.now().isoformat(),
+            'follow_up_date': request.POST.get('follow_up_date'),
+            'outcome': request.POST.get('outcome'),
+            'location': request.POST.get('location', '')
+        }
+        
+        interaction_doc = InteractionSchema.create_interaction_document(interaction_data)
+        doc_id = FirebaseDB.add_record('interactions', interaction_doc)
+        
+        if doc_id:
+            messages.success(request, "✅ Interaction added successfully!")
+            return redirect('customer_detail', customer_id=customer_id)
+        else:
+            messages.error(request, "❌ Failed to add interaction")
     
-    return render(request, 'customers/interaction_form.html', {
-        'form': form,
-        'customer': customer
-    })
+    context = {
+        'customer': customer,
+        'interaction_types': InteractionSchema.INTERACTION_TYPES,
+        'outcome_choices': InteractionSchema.OUTCOME_CHOICES
+    }
+    
+    return render(request, 'customers/interaction_form.html', context)
 
 @login_required
 @require_http_methods(["GET"])
 def customer_search_api(request):
-    """API endpoint for customer search"""
+    """API endpoint for customer search using Firebase"""
     query = request.GET.get('q', '')
     limit = int(request.GET.get('limit', 10))
     
     if len(query) < 2:
         return JsonResponse({'results': []})
     
-    customers = Customer.objects.filter(
-        Q(name__icontains=query) |
-        Q(email__icontains=query) |
-        Q(company__icontains=query)
-    )[:limit]
+    customers = FirebaseDB.get_records('customers')
+    
+    # Filter customers based on search query
+    filtered_customers = []
+    for customer in customers:
+        name = customer.get('name', '').lower()
+        email = customer.get('email', '').lower()
+        company = customer.get('company', '').lower()
+        
+        if (query.lower() in name or 
+            query.lower() in email or 
+            query.lower() in company):
+            filtered_customers.append(customer)
     
     # Filter by assigned user if not staff
     if not request.user.is_staff:
-        customers = customers.filter(assigned_to=request.user)
+        user_email = request.user.email
+        filtered_customers = [c for c in filtered_customers if c.get('assigned_to') == user_email]
+    
+    # Limit results
+    filtered_customers = filtered_customers[:limit]
     
     results = [{
-        'id': c.id,
-        'name': c.name,
-        'email': c.email,
-        'company': c.company,
-        'status': c.status
-    } for c in customers]
+        'id': c.get('id'),
+        'name': c.get('name'),
+        'email': c.get('email'),
+        'company': c.get('company'),
+        'status': c.get('status')
+    } for c in filtered_customers]
     
     return JsonResponse({'results': results})
 
@@ -232,98 +376,101 @@ def customer_search_api(request):
 @validate_json_request(['name', 'email'])
 @require_http_methods(["POST"])
 def customer_quick_add_api(request):
-    """API endpoint for quick customer addition"""
+    """API endpoint for quick customer addition using Firebase"""
     data = json.loads(request.body)
     
     # Check if customer already exists
-    if Customer.objects.filter(email=data['email']).exists():
-        return JsonResponse({'error': 'Customer with this email already exists'}, status=400)
+    existing_customers = FirebaseDB.get_records('customers')
+    for existing in existing_customers:
+        if existing.get('email', '').lower() == data['email'].lower():
+            return JsonResponse({'error': 'Customer with this email already exists'}, status=400)
     
-    customer = Customer(
-        name=data['name'],
-        email=data['email'],
-        phone=data.get('phone', ''),
-        company=data.get('company', ''),
-        status='Lead',
-        assigned_to=request.user,
-        notes=data.get('notes', '')
-    )
-    customer.save()
+    customer_data = {
+        'name': data['name'],
+        'email': data['email'],
+        'phone': data.get('phone', ''),
+        'company': data.get('company', ''),
+        'status': 'Lead',
+        'assigned_to': request.user.email,
+        'notes': data.get('notes', '')
+    }
     
-    # Sync with Firebase
-    firebase_data = customer.to_firebase_dict()
-    firebase_id = FirebaseManager.create_customer(firebase_data)
-    customer.firebase_id = firebase_id
-    customer.save()
+    customer_doc = CustomerSchema.create_customer_document(customer_data)
+    doc_id = FirebaseDB.add_record('customers', customer_doc)
     
-    return JsonResponse({
-        'id': customer.id,
-        'name': customer.name,
-        'email': customer.email,
-        'message': 'Customer created successfully'
-    })
+    if doc_id:
+        return JsonResponse({
+            'id': doc_id,
+            'name': customer_data['name'],
+            'email': customer_data['email'],
+            'message': 'Customer created successfully'
+        })
+    
+    return JsonResponse({'error': 'Failed to create customer'}, status=500)
 
 @login_required
 @role_required('Admin', 'Manager')
 def customer_export(request):
-    """Export customers to CSV or PDF"""
+    """Export customers to CSV or PDF using Firebase"""
     export_format = request.GET.get('format', 'csv')
     
-    customers = Customer.objects.all()
+    customers = FirebaseDB.get_records('customers')
     
     # Apply filters from request
     status_filter = request.GET.get('status', '')
     if status_filter:
-        customers = customers.filter(status=status_filter)
+        customers = [c for c in customers if c.get('status') == status_filter]
     
     if export_format == 'csv':
         data = [{
-            'Name': c.name,
-            'Email': c.email,
-            'Phone': c.phone,
-            'Company': c.company,
-            'Status': c.status,
-            'Assigned To': c.assigned_to.username if c.assigned_to else '',
-            'Created Date': c.created_date.strftime('%Y-%m-%d'),
-            'Total Deal Value': c.total_deal_value,
-            'Interactions': c.interaction_count
+            'Name': c.get('name', ''),
+            'Email': c.get('email', ''),
+            'Phone': c.get('phone', ''),
+            'Company': c.get('company', ''),
+            'Status': c.get('status', ''),
+            'Assigned To': c.get('assigned_to', ''),
+            'Created Date': c.get('created_date', '')[:10] if c.get('created_date') else '',
+            'Total Deal Value': c.get('total_deal_value', 0),
+            'Interactions': c.get('interaction_count', 0)
         } for c in customers]
         
-        filepath = export_to_csv(data, 'customers')
+        # Create CSV file (simplified - in production use proper CSV export)
+        import csv
+        import io
         
-        # Return file download response
-        with open(filepath, 'rb') as f:
-            response = HttpResponse(f.read(), content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename="customers.csv"'
-            return response
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=data[0].keys() if data else [])
+        writer.writeheader()
+        writer.writerows(data)
+        
+        response = HttpResponse(output.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+        return response
     
     elif export_format == 'pdf':
-        # Generate PDF report
-        context = {
-            'customers': customers,
-            'generated_date': datetime.now()
-        }
-        filepath = export_to_pdf(context, 'customer_report', 'customers')
-        
-        # Return file download response
-        with open(filepath, 'rb') as f:
-            response = HttpResponse(f.read(), content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="customers.pdf"'
-            return response
+        # Simplified PDF export - in production use proper PDF library
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="customers.pdf"'
+        response.write(b'PDF export not implemented yet')
+        return response
     
     return JsonResponse({'error': 'Invalid export format'}, status=400)
 
 @login_required
 def customer_analytics(request):
-    """Customer analytics dashboard"""
+    """Customer analytics dashboard using Firebase"""
     # Get date range
     period = request.GET.get('period', 'month')
     
+    customers = FirebaseDB.get_records('customers')
+    
     # Calculate metrics
-    total_customers = Customer.objects.count()
+    total_customers = len(customers)
     
     # Customers by status
-    status_counts = Customer.objects.values('status').annotate(count=Count('id'))
+    status_counts = {}
+    for status in CustomerSchema.STATUS_CHOICES:
+        status_counts[status] = len([c for c in customers if c.get('status') == status])
     
     # New customers this period
     if period == 'week':
@@ -335,13 +482,36 @@ def customer_analytics(request):
     else:
         start_date = datetime.now() - timedelta(days=365)
     
-    new_customers = Customer.objects.filter(created_date__gte=start_date).count()
+    start_date_str = start_date.isoformat()
+    new_customers = len([c for c in customers if c.get('created_date', '') >= start_date_str])
     
-    # Top performers (customers with most deals)
-    top_customers = Customer.objects.annotate(
-        deal_count=Count('deals'),
-        total_value=Sum('deals__value')
-    ).order_by('-total_value')[:10]
+    # Top customers by deal value
+    deals = FirebaseDB.get_records('deals')
+    customer_values = {}
+    
+    for deal in deals:
+        customer_name = deal.get('customer', '')
+        if customer_name:
+            if customer_name not in customer_values:
+                customer_values[customer_name] = 0
+            customer_values[customer_name] += deal.get('value', 0)
+    
+    # Find top customers
+    top_customers = []
+    for customer in customers:
+        customer_name = customer.get('name', '')
+        total_value = customer_values.get(customer_name, 0)
+        deal_count = len([d for d in deals if d.get('customer') == customer_name])
+        
+        top_customers.append({
+            'name': customer_name,
+            'company': customer.get('company', ''),
+            'total_value': total_value,
+            'deal_count': deal_count
+        })
+    
+    top_customers.sort(key=lambda x: x['total_value'], reverse=True)
+    top_customers = top_customers[:10]
     
     context = {
         'total_customers': total_customers,
