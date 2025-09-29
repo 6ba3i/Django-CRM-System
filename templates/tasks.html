@@ -3,92 +3,360 @@
 
 {% block title %}Tasks{% endblock %}
 {% block page_title %}Task Management{% endblock %}
+{% block page_subtitle %}Organize and track your team's tasks{% endblock %}
 
 {% block content %}
+<style>
+    .task-priority-high {
+        background: rgba(255, 107, 107, 0.2);
+        border-left: 3px solid #ff6b6b;
+    }
+    
+    .task-priority-medium {
+        background: rgba(255, 215, 0, 0.2);
+        border-left: 3px solid #ffd700;
+    }
+    
+    .task-priority-low {
+        background: rgba(74, 144, 226, 0.2);
+        border-left: 3px solid #4a90e2;
+    }
+    
+    .task-overdue {
+        border-left-color: #ff3b30 !important;
+        background: rgba(255, 59, 48, 0.1);
+    }
+    
+    .task-completed {
+        opacity: 0.7;
+        text-decoration: line-through;
+    }
+    
+    .priority-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .priority-high {
+        background: rgba(255, 107, 107, 0.2);
+        color: #ff6b6b;
+        border: 1px solid rgba(255, 107, 107, 0.3);
+    }
+    
+    .priority-medium {
+        background: rgba(255, 215, 0, 0.2);
+        color: #ffd700;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    
+    .priority-low {
+        background: rgba(74, 144, 226, 0.2);
+        color: #4a90e2;
+        border: 1px solid rgba(74, 144, 226, 0.3);
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    
+    .status-pending {
+        background: rgba(255, 149, 0, 0.2);
+        color: #ff9500;
+    }
+    
+    .status-progress {
+        background: rgba(74, 144, 226, 0.2);
+        color: #4a90e2;
+    }
+    
+    .status-completed {
+        background: rgba(80, 200, 120, 0.2);
+        color: #50c878;
+    }
+</style>
+
+<!-- Task Statistics -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px;">
+    <div class="glass-card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4a90e2, #6ba3f0); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                    <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/>
+                </svg>
+            </div>
+            <div>
+                <div style="font-size: 24px; font-weight: 700;">{{ tasks|length }}</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Total Tasks</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ff6b6b, #ff8a80); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+            <div>
+                <div style="font-size: 24px; font-weight: 700; color: #ff6b6b;">{{ overdue_count }}</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Overdue</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #50c878, #69d687); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                </svg>
+            </div>
+            <div>
+                {% with completed_count=tasks|length %}
+                    {% with completed=0 %}
+                        {% for task in tasks %}
+                            {% if task.status == 'Completed' %}
+                                {% with completed=completed|add:1 %}{% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                        <div style="font-size: 24px; font-weight: 700; color: #50c878;">{{ completed }}</div>
+                    {% endwith %}
+                {% endwith %}
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Completed</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8a2be2, #9d4edd); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                </svg>
+            </div>
+            <div>
+                {% with high_priority_count=0 %}
+                    {% for task in tasks %}
+                        {% if task.priority == 'High' %}
+                            {% with high_priority_count=high_priority_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <div style="font-size: 24px; font-weight: 700;">{{ high_priority_count }}</div>
+                {% endwith %}
+                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">High Priority</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add Task Form -->
-<div class="glass-panel" style="margin-bottom: 24px;">
-    <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Task</h2>
-    <form method="post" action="{% url 'add_task' %}">
+<div class="glass-panel" style="margin-bottom: 32px;">
+    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        Add New Task
+    </h2>
+    
+    <form method="post" action="{% url 'add_task' %}" class="needs-validation" novalidate>
         {% csrf_token %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-            <input type="text" name="title" placeholder="Task Title" class="glass-input" required>
-            <select name="assigned_to" class="glass-select">
-                <option value="">Assign To</option>
-                {% for employee in employees %}
-                <option value="{{ employee.name }}">{{ employee.name }}</option>
-                {% endfor %}
-            </select>
-            <input type="date" name="due_date" class="glass-input">
-            <select name="priority" class="glass-select">
-                {% for priority in priorities %}
-                <option value="{{ priority }}">{{ priority }}</option>
-                {% endfor %}
-            </select>
-            <select name="status" class="glass-select">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Task Title *</label>
+                <input type="text" name="title" placeholder="Enter task title" class="glass-input" required>
+                <div class="invalid-feedback">Please provide a task title.</div>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Assign To</label>
+                <select name="assigned_to" class="glass-select">
+                    <option value="">Select Team Member</option>
+                    {% for employee in employees %}
+                    <option value="{{ employee.name }}">{{ employee.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Due Date</label>
+                <input type="date" name="due_date" class="glass-input">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Priority</label>
+                <select name="priority" class="glass-select" required>
+                    {% for priority in priorities %}
+                    <option value="{{ priority }}">{{ priority }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Status</label>
+                <select name="status" class="glass-select">
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Description</label>
+            <textarea name="description" placeholder="Describe the task in detail..." class="glass-input" rows="4" style="width: 100%; resize: vertical;"></textarea>
+        </div>
+        
+        <div style="margin-top: 24px;">
+            <button type="submit" class="glass-btn primary" style="padding: 12px 32px;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 8px;">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                Create Task
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Tasks Filter -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+        <div>
+            <label style="font-weight: 500; margin-right: 8px;">Filter by Status:</label>
+            <select class="glass-select" onchange="filterTasks(this.value)" style="width: 150px;">
+                <option value="">All Tasks</option>
                 <option value="Pending">Pending</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
             </select>
         </div>
-        <div style="margin-top: 16px;">
-            <textarea name="description" placeholder="Description..." class="glass-input" rows="3" style="width: 100%;"></textarea>
+        
+        <div>
+            <label style="font-weight: 500; margin-right: 8px;">Filter by Priority:</label>
+            <select class="glass-select" onchange="filterByPriority(this.value)" style="width: 150px;">
+                <option value="">All Priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
         </div>
-        <button type="submit" class="glass-btn primary" style="margin-top: 16px;">Add Task</button>
-    </form>
-</div>
-
-<!-- Task Metrics -->
-<div class="glass-panel" style="margin-bottom: 24px;">
-    <div style="display: flex; gap: 20px;">
-        <div>Overdue Tasks: <strong style="color: #ff6b6b;">{{ overdue_count }}</strong></div>
-        <div>Total Tasks: <strong>{{ tasks|length }}</strong></div>
+        
+        <div style="margin-left: auto;">
+            <span style="color: rgba(255,255,255,0.7);">Total: <strong>{{ tasks|length }}</strong> tasks</span>
+        </div>
     </div>
 </div>
 
 <!-- Task List -->
 <div class="glass-panel">
-    <h2 style="font-size: 18px; margin-bottom: 20px;">Task List</h2>
-    <div class="glass-table">
-        <table style="width: 100%;">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Assigned To</th>
-                    <th>Due Date</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for task in tasks %}
-                <tr id="task-{{ task.id }}">
-                    <td>{{ task.title }}</td>
-                    <td>{{ task.assigned_to|default:"-" }}</td>
-                    <td>{{ task.due_date|default:"-" }}</td>
-                    <td>
-                        <span style="padding: 4px 8px; background: {% if task.priority == 'High' %}rgba(255, 107, 107, 0.2){% elif task.priority == 'Medium' %}rgba(255, 215, 0, 0.2){% else %}rgba(74, 144, 226, 0.2){% endif %}; border-radius: 4px;">
-                            {{ task.priority }}
+    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+        </svg>
+        Task List
+    </h2>
+    
+    {% if tasks %}
+    <div class="task-grid" style="display: grid; gap: 16px;">
+        {% for task in tasks %}
+        <div class="task-card glass-card task-priority-{{ task.priority|lower }} {% if task.status == 'Completed' %}task-completed{% endif %}" 
+             id="task-{{ task.id }}" 
+             data-status="{{ task.status }}" 
+             data-priority="{{ task.priority }}"
+             style="padding: 20px; transition: all 0.3s ease; cursor: pointer;"
+             onclick="toggleTaskDetails('{{ task.id }}')">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #fff;">
+                        {{ task.title }}
+                    </h3>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <span class="priority-badge priority-{{ task.priority|lower }}">
+                            {{ task.priority }} Priority
                         </span>
-                    </td>
-                    <td class="task-status">{{ task.status }}</td>
-                    <td>
-                        {% if task.status != 'Completed' %}
-                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;" 
-                                onclick="completeTask('{{ task.id }}')">Complete</button>
-                        {% else %}
-                        <span style="color: #50c878;">✓ Done</span>
+                        
+                        {% if task.status == 'Pending' %}
+                            <span class="status-badge status-pending">{{ task.status }}</span>
+                        {% elif task.status == 'In Progress' %}
+                            <span class="status-badge status-progress">{{ task.status }}</span>
+                        {% elif task.status == 'Completed' %}
+                            <span class="status-badge status-completed">{{ task.status }}</span>
                         {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" style="text-align: center;">No tasks found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        
+                        {% if task.due_date %}
+                            <span style="font-size: 11px; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 8px;">
+                                Due: {{ task.due_date }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px;">
+                    {% if task.status != 'Completed' %}
+                    <button class="glass-btn" 
+                            style="padding: 6px 12px; font-size: 12px; background: rgba(80, 200, 120, 0.2); border: 1px solid rgba(80, 200, 120, 0.3);"
+                            onclick="event.stopPropagation(); completeTask('{{ task.id }}')">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
+                            <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                        </svg>
+                        Complete
+                    </button>
+                    {% else %}
+                    <span style="color: #50c878; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                        </svg>
+                        Completed
+                    </span>
+                    {% endif %}
+                    
+                    <button class="glass-btn secondary" 
+                            style="padding: 6px 12px; font-size: 12px;"
+                            onclick="event.stopPropagation(); editTask('{{ task.id }}')">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                {% if task.assigned_to %}
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #4a90e2, #50c878); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">
+                            {{ task.assigned_to|first|upper }}
+                        </div>
+                        <span style="font-size: 14px; color: rgba(255,255,255,0.8);">{{ task.assigned_to }}</span>
+                    </div>
+                {% endif %}
+                
+                {% if task.description %}
+                    <div class="task-description" id="desc-{{ task.id }}" style="display: none; margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.5;">
+                        {{ task.description }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.6);">
+        <svg width="64" height="64" fill="currentColor" viewBox="0 0 24 24" style="margin-bottom: 16px; opacity: 0.5;">
+            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/>
+        </svg>
+        <h3 style="font-size: 18px; margin-bottom: 8px;">No tasks found</h3>
+        <p>Create your first task to get started with project management.</p>
+    </div>
+    {% endif %}
 </div>
 
 <script>
@@ -119,10 +387,158 @@ function completeTask(taskId) {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            window.location.reload();
+            // Update UI without reload
+            const taskCard = document.getElementById(`task-${taskId}`);
+            taskCard.classList.add('task-completed');
+            taskCard.setAttribute('data-status', 'Completed');
+            
+            // Update button
+            const button = taskCard.querySelector('button');
+            if (button && button.textContent.includes('Complete')) {
+                button.outerHTML = `
+                    <span style="color: #50c878; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                        </svg>
+                        Completed
+                    </span>
+                `;
+            }
+            
+            // Show success message
+            showNotification('Task completed successfully!', 'success');
+        } else {
+            showNotification('Failed to update task', 'error');
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
 }
+
+function editTask(taskId) {
+    // Implement edit functionality
+    alert('Edit functionality would be implemented here. For now, you can edit tasks through the admin panel.');
+}
+
+function toggleTaskDetails(taskId) {
+    const description = document.getElementById(`desc-${taskId}`);
+    if (description) {
+        if (description.style.display === 'none') {
+            description.style.display = 'block';
+        } else {
+            description.style.display = 'none';
+        }
+    }
+}
+
+function filterTasks(status) {
+    const tasks = document.querySelectorAll('.task-card');
+    tasks.forEach(task => {
+        if (status === '' || task.getAttribute('data-status') === status) {
+            task.style.display = 'block';
+        } else {
+            task.style.display = 'none';
+        }
+    });
+}
+
+function filterByPriority(priority) {
+    const tasks = document.querySelectorAll('.task-card');
+    tasks.forEach(task => {
+        if (priority === '' || task.getAttribute('data-priority') === priority) {
+            task.style.display = 'block';
+        } else {
+            task.style.display = 'none';
+        }
+    });
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `glass-alert ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed; 
+        top: 20px; 
+        right: 20px; 
+        z-index: 3000; 
+        min-width: 300px; 
+        padding: 16px 20px;
+        border-radius: 8px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .glass-alert.success {
+        background: rgba(80, 200, 120, 0.1);
+        border-left: 4px solid #50c878;
+        color: #50c878;
+    }
+    
+    .glass-alert.error {
+        background: rgba(255, 59, 48, 0.1);
+        border-left: 4px solid #ff3b30;
+        color: #ff3b30;
+    }
+`;
+document.head.appendChild(style);
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('.needs-validation');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+});
 </script>
 {% endblock %}
