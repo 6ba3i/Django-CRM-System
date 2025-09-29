@@ -267,5 +267,174 @@ class FirebaseAuth:
                 print(f"Error getting user data: {e}")
         return {}
 
+class FirebaseManager:
+    """Manager class for Firebase operations"""
+    
+    @staticmethod
+    def create_customer(customer_data):
+        """Create customer in Firebase and return ID"""
+        if db:
+            try:
+                doc_ref = db.collection('customers').add(customer_data)
+                return doc_ref[1].id
+            except Exception as e:
+                print(f"Error creating customer in Firebase: {e}")
+                return None
+        return f"local_customer_{int(datetime.now().timestamp())}"
+    
+    @staticmethod
+    def update_customer(firebase_id, customer_data):
+        """Update customer in Firebase"""
+        if db and firebase_id:
+            try:
+                db.collection('customers').document(firebase_id).update(customer_data)
+                return True
+            except Exception as e:
+                print(f"Error updating customer in Firebase: {e}")
+                return False
+        return False
+    
+    @staticmethod
+    def delete_customer(firebase_id):
+        """Delete customer from Firebase"""
+        if db and firebase_id:
+            try:
+                db.collection('customers').document(firebase_id).delete()
+                return True
+            except Exception as e:
+                print(f"Error deleting customer from Firebase: {e}")
+                return False
+        return False
+    
+    @staticmethod
+    def create_deal(deal_data):
+        """Create deal in Firebase and return ID"""
+        if db:
+            try:
+                doc_ref = db.collection('deals').add(deal_data)
+                return doc_ref[1].id
+            except Exception as e:
+                print(f"Error creating deal in Firebase: {e}")
+                return None
+        return f"local_deal_{int(datetime.now().timestamp())}"
+    
+    @staticmethod
+    def update_deal(firebase_id, deal_data):
+        """Update deal in Firebase"""
+        if db and firebase_id:
+            try:
+                db.collection('deals').document(firebase_id).update(deal_data)
+                return True
+            except Exception as e:
+                print(f"Error updating deal in Firebase: {e}")
+                return False
+        return False
+    
+    @staticmethod
+    def create_interaction(interaction_data):
+        """Create interaction in Firebase and return ID"""
+        if db:
+            try:
+                doc_ref = db.collection('interactions').add(interaction_data)
+                return doc_ref[1].id
+            except Exception as e:
+                print(f"Error creating interaction in Firebase: {e}")
+                return None
+        return f"local_interaction_{int(datetime.now().timestamp())}"
+    
+    @staticmethod
+    def sync_customer_from_firebase(firebase_id):
+        """Sync customer data from Firebase to Django"""
+        if db and firebase_id:
+            try:
+                doc = db.collection('customers').document(firebase_id).get()
+                if doc.exists:
+                    return doc.to_dict()
+            except Exception as e:
+                print(f"Error syncing customer from Firebase: {e}")
+        return None
+    
+    @staticmethod
+    def bulk_sync_customers():
+        """Sync all customers from Firebase"""
+        if db:
+            try:
+                customers = []
+                docs = db.collection('customers').stream()
+                for doc in docs:
+                    customer_data = doc.to_dict()
+                    customer_data['firebase_id'] = doc.id
+                    customers.append(customer_data)
+                return customers
+            except Exception as e:
+                print(f"Error bulk syncing customers: {e}")
+        return []
+    
+    @staticmethod
+    def get_real_time_updates(collection, callback):
+        """Set up real-time listeners for Firebase collections"""
+        if db:
+            try:
+                def on_snapshot(doc_snapshot, changes, read_time):
+                    for change in changes:
+                        if change.type.name == 'ADDED':
+                            callback('added', change.document.to_dict())
+                        elif change.type.name == 'MODIFIED':
+                            callback('modified', change.document.to_dict())
+                        elif change.type.name == 'REMOVED':
+                            callback('removed', change.document.to_dict())
+                
+                # Set up listener
+                doc_watch = db.collection(collection).on_snapshot(on_snapshot)
+                return doc_watch
+            except Exception as e:
+                print(f"Error setting up real-time listener: {e}")
+        return None
+    
+    @staticmethod
+    def backup_data(collection):
+        """Backup collection data"""
+        if db:
+            try:
+                docs = db.collection(collection).stream()
+                backup_data = []
+                for doc in docs:
+                    data = doc.to_dict()
+                    data['_doc_id'] = doc.id
+                    backup_data.append(data)
+                
+                # Save to file
+                backup_filename = f"backup_{collection}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                with open(backup_filename, 'w') as f:
+                    json.dump(backup_data, f, indent=2, default=str)
+                
+                print(f"Backup saved to {backup_filename}")
+                return backup_filename
+            except Exception as e:
+                print(f"Error backing up data: {e}")
+        return None
+    
+    @staticmethod
+    def restore_data(collection, backup_file):
+        """Restore collection data from backup"""
+        if db and os.path.exists(backup_file):
+            try:
+                with open(backup_file, 'r') as f:
+                    backup_data = json.load(f)
+                
+                batch = db.batch()
+                for item in backup_data:
+                    doc_id = item.pop('_doc_id', None)
+                    if doc_id:
+                        doc_ref = db.collection(collection).document(doc_id)
+                        batch.set(doc_ref, item)
+                
+                batch.commit()
+                print(f"Data restored from {backup_file}")
+                return True
+            except Exception as e:
+                print(f"Error restoring data: {e}")
+        return False
+
 # Create default admin user for testing
 FirebaseAuth.sign_up('admin@crm.com', 'admin123', 'Admin User')
