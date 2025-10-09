@@ -26,6 +26,12 @@ urlpatterns = [
     path('api/deal/add/', views.add_deal, name='add_deal'),
     path('api/task/add/', views.add_task, name='add_task'),
     
+    # Edit operations
+    path('api/customer/<str:customer_id>/edit/', views.edit_customer, name='edit_customer'),
+    path('api/employee/<str:employee_id>/edit/', views.edit_employee, name='edit_employee'),
+    path('api/deal/<str:deal_id>/edit/', views.edit_deal, name='edit_deal'),
+    path('api/task/<str:task_id>/edit/', views.edit_task, name='edit_task'),
+    
     # Generic update and delete
     path('api/<str:collection>/<str:doc_id>/update/', views.update_record, name='update_record'),
     path('api/<str:collection>/<str:doc_id>/delete/', views.delete_record, name='delete_record'),

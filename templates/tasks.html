@@ -80,6 +80,79 @@
         background: rgba(80, 200, 120, 0.2);
         color: #50c878;
     }
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: linear-gradient(135deg, rgba(26, 29, 41, 0.95), rgba(45, 49, 66, 0.95));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-close:hover {
+        background: rgba(255, 59, 48, 0.3);
+        transform: rotate(90deg);
+    }
 </style>
 
 <!-- Task Statistics -->
@@ -108,50 +181,6 @@
             <div>
                 <div style="font-size: 24px; font-weight: 700; color: #ff6b6b;">{{ overdue_count }}</div>
                 <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Overdue</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="glass-card">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #50c878, #69d687); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
-                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-                </svg>
-            </div>
-            <div>
-                {% with completed_count=tasks|length %}
-                    {% with completed=0 %}
-                        {% for task in tasks %}
-                            {% if task.status == 'Completed' %}
-                                {% with completed=completed|add:1 %}{% endwith %}
-                            {% endif %}
-                        {% endfor %}
-                        <div style="font-size: 24px; font-weight: 700; color: #50c878;">{{ completed }}</div>
-                    {% endwith %}
-                {% endwith %}
-                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Completed</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="glass-card">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8a2be2, #9d4edd); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
-                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-                </svg>
-            </div>
-            <div>
-                {% with high_priority_count=0 %}
-                    {% for task in tasks %}
-                        {% if task.priority == 'High' %}
-                            {% with high_priority_count=high_priority_count|add:1 %}{% endwith %}
-                        {% endif %}
-                    {% endfor %}
-                    <div style="font-size: 24px; font-weight: 700;">{{ high_priority_count }}</div>
-                {% endwith %}
-                <div style="font-size: 12px; color: rgba(255,255,255,0.6);">High Priority</div>
             </div>
         </div>
     </div>
@@ -301,31 +330,30 @@
                 </div>
                 
                 <div style="display: flex; gap: 8px;">
+                    <button class="glass-btn" 
+                            style="padding: 6px 12px; font-size: 12px; background: rgba(74, 144, 226, 0.2); border: 1px solid rgba(74, 144, 226, 0.3);"
+                            onclick="event.stopPropagation(); editTask('{{ task.id }}')">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                    </button>
+                    
                     {% if task.status != 'Completed' %}
                     <button class="glass-btn" 
                             style="padding: 6px 12px; font-size: 12px; background: rgba(80, 200, 120, 0.2); border: 1px solid rgba(80, 200, 120, 0.3);"
                             onclick="event.stopPropagation(); completeTask('{{ task.id }}')">
-                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
                         </svg>
-                        Complete
                     </button>
                     {% else %}
                     <span style="color: #50c878; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
                         </svg>
-                        Completed
+                        Done
                     </span>
                     {% endif %}
-                    
-                    <button class="glass-btn secondary" 
-                            style="padding: 6px 12px; font-size: 12px;"
-                            onclick="event.stopPropagation(); editTask('{{ task.id }}')">
-                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
             
@@ -359,6 +387,77 @@
     {% endif %}
 </div>
 
+<!-- Edit Task Modal with Blur Overlay -->
+<div id="editTaskModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeTaskEditModal()">
+            <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+        
+        <h2 style="margin-bottom: 30px; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #4a90e2, #50c878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Edit Task
+        </h2>
+        
+        <form id="editTaskForm">
+            <input type="hidden" id="edit-task-id">
+            
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Title *</label>
+                    <input type="text" id="edit-task-title" placeholder="Title" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Description</label>
+                    <textarea id="edit-task-description" placeholder="Description" class="glass-input" rows="3"></textarea>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Assigned To</label>
+                    <input type="text" id="edit-task-assigned" placeholder="Assigned To" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Due Date</label>
+                    <input type="date" id="edit-task-due-date" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Priority</label>
+                    <select id="edit-task-priority" class="glass-select">
+                        {% for priority in priorities %}
+                        <option value="{{ priority }}">{{ priority }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Status</label>
+                    <select id="edit-task-status" class="glass-select">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 16px; margin-top: 30px;">
+                <button type="button" onclick="saveTask()" class="glass-btn primary" style="flex: 1;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 8px;">
+                        <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                    </svg>
+                    Save Changes
+                </button>
+                <button type="button" onclick="closeTaskEditModal()" class="glass-btn secondary">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function getCookie(name) {
     let cookieValue = null;
@@ -375,6 +474,65 @@ function getCookie(name) {
     return cookieValue;
 }
 
+function editTask(taskId) {
+    fetch(`/api/task/${taskId}/edit/`)
+        .then(response => response.json())
+        .then(task => {
+            document.getElementById('edit-task-id').value = taskId;
+            document.getElementById('edit-task-title').value = task.title || '';
+            document.getElementById('edit-task-description').value = task.description || '';
+            document.getElementById('edit-task-assigned').value = task.assigned_to || '';
+            document.getElementById('edit-task-due-date').value = task.due_date || '';
+            document.getElementById('edit-task-priority').value = task.priority || 'Medium';
+            document.getElementById('edit-task-status').value = task.status || 'Pending';
+            
+            const modal = document.getElementById('editTaskModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load task data');
+        });
+}
+
+function closeTaskEditModal() {
+    const modal = document.getElementById('editTaskModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function saveTask() {
+    const taskId = document.getElementById('edit-task-id').value;
+    const formData = new FormData();
+    formData.append('title', document.getElementById('edit-task-title').value);
+    formData.append('description', document.getElementById('edit-task-description').value);
+    formData.append('assigned_to', document.getElementById('edit-task-assigned').value);
+    formData.append('due_date', document.getElementById('edit-task-due-date').value);
+    formData.append('priority', document.getElementById('edit-task-priority').value);
+    formData.append('status', document.getElementById('edit-task-status').value);
+    
+    fetch(`/api/task/${taskId}/edit/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('Task updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification('Failed to update task', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
+}
+
 function completeTask(taskId) {
     fetch(`/api/tasks/${taskId}/update/`, {
         method: 'POST',
@@ -387,26 +545,11 @@ function completeTask(taskId) {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            // Update UI without reload
             const taskCard = document.getElementById(`task-${taskId}`);
             taskCard.classList.add('task-completed');
             taskCard.setAttribute('data-status', 'Completed');
-            
-            // Update button
-            const button = taskCard.querySelector('button');
-            if (button && button.textContent.includes('Complete')) {
-                button.outerHTML = `
-                    <span style="color: #50c878; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
-                        </svg>
-                        Completed
-                    </span>
-                `;
-            }
-            
-            // Show success message
             showNotification('Task completed successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
         } else {
             showNotification('Failed to update task', 'error');
         }
@@ -415,11 +558,6 @@ function completeTask(taskId) {
         console.error('Error:', error);
         showNotification('An error occurred', 'error');
     });
-}
-
-function editTask(taskId) {
-    // Implement edit functionality
-    alert('Edit functionality would be implemented here. For now, you can edit tasks through the admin panel.');
 }
 
 function toggleTaskDetails(taskId) {
@@ -525,6 +663,13 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Close modal when clicking outside
+document.getElementById('editTaskModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeTaskEditModal();
+    }
+});
 
 // Form validation
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,39 +1,35 @@
 # Core Django Framework
-Django==4.2.9
+Django>=4.2,<5.1
 
-# Environment Management (REQUIRED for secure config)
-python-decouple==3.8
+# Environment Management
+python-decouple>=3.6
 
-# Firebase Integration (REQUIRED)
-firebase-admin==6.3.0
-google-cloud-firestore==2.14.0
+# Firebase Integration
+firebase-admin>=6.0.0
+google-cloud-firestore>=2.0.0
 
-# API Framework (optional but recommended)
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
+# API Framework
+djangorestframework>=3.14.0
+django-cors-headers>=4.0.0
 
-# Chart Generation & Analytics
-matplotlib==3.7.4
-pandas==2.0.3
-numpy==1.24.4
-Pillow==10.1.0
+# Chart Generation & Analytics (Python 3.12 compatible)
+matplotlib>=3.8.0
+pandas>=2.1.0
+numpy>=1.26.0
+Pillow>=10.0.0
 
 # Production Deployment
-gunicorn==21.2.0
-whitenoise==6.6.0
+gunicorn>=20.0.0
+whitenoise>=6.0.0
 
 # HTTP Requests
-requests==2.31.0
+requests>=2.28.0
 
 # Date/Time Utilities
-python-dateutil==2.8.2
+python-dateutil>=2.8.0
 
 # Security
-cryptography==41.0.7
+cryptography>=40.0.0
 
 # Data Export
-openpyxl==3.1.2
-
-# Development tools (optional)
-ipython==8.18.1
-django-extensions==3.2.3
+openpyxl>=3.0.0

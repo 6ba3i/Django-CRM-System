@@ -5,6 +5,82 @@
 {% block page_title %}Deal Management{% endblock %}
 
 {% block content %}
+<style>
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: linear-gradient(135deg, rgba(26, 29, 41, 0.95), rgba(45, 49, 66, 0.95));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-close:hover {
+        background: rgba(255, 59, 48, 0.3);
+        transform: rotate(90deg);
+    }
+</style>
+
 <!-- Add Deal Form -->
 <div class="glass-panel" style="margin-bottom: 24px;">
     <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Deal</h2>
@@ -63,18 +139,21 @@
             </thead>
             <tbody>
                 {% for deal in deals %}
-                <tr>
-                    <td>{{ deal.title }}</td>
-                    <td>{{ deal.customer }}</td>
-                    <td>${{ deal.value|default:"0" }}</td>
-                    <td>
+                <tr id="deal-{{ deal.id }}">
+                    <td class="deal-title">{{ deal.title }}</td>
+                    <td class="deal-customer">{{ deal.customer }}</td>
+                    <td class="deal-value">${{ deal.value|default:"0" }}</td>
+                    <td class="deal-stage">
                         <span style="padding: 4px 8px; background: rgba(80, 200, 120, 0.2); border-radius: 4px;">
                             {{ deal.stage }}
                         </span>
                     </td>
-                    <td>{{ deal.probability }}%</td>
+                    <td class="deal-probability">{{ deal.probability }}%</td>
                     <td>
-                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="editDeal('{{ deal.id }}')">Edit</button>
+                        <button class="glass-btn danger" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="deleteDeal('{{ deal.id }}')">Delete</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -84,6 +163,78 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Edit Modal with Blur Overlay -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeEditModal()">
+            <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+        
+        <h2 style="margin-bottom: 30px; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #4a90e2, #50c878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Edit Deal
+        </h2>
+        
+        <form id="editForm">
+            <input type="hidden" id="edit-id">
+            
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Title *</label>
+                    <input type="text" id="edit-title" placeholder="Title" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Customer *</label>
+                    <input type="text" id="edit-customer" placeholder="Customer" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Value ($) *</label>
+                    <input type="number" id="edit-value" placeholder="Value" class="glass-input" min="0" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Stage</label>
+                    <select id="edit-stage" class="glass-select">
+                        {% for stage in stages %}
+                        <option value="{{ stage }}">{{ stage }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Probability (%)</label>
+                    <input type="number" id="edit-probability" placeholder="Probability %" class="glass-input" min="0" max="100">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Expected Close</label>
+                    <input type="date" id="edit-expected-close" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Notes</label>
+                    <textarea id="edit-notes" placeholder="Notes..." class="glass-input" rows="3"></textarea>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 16px; margin-top: 30px;">
+                <button type="button" onclick="saveDeal()" class="glass-btn primary" style="flex: 1;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 8px;">
+                        <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                    </svg>
+                    Save Changes
+                </button>
+                <button type="button" onclick="closeEditModal()" class="glass-btn secondary">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -100,4 +251,116 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function editDeal(dealId) {
+    fetch(`/api/deal/${dealId}/edit/`)
+        .then(response => response.json())
+        .then(deal => {
+            document.getElementById('edit-id').value = dealId;
+            document.getElementById('edit-title').value = deal.title || '';
+            document.getElementById('edit-customer').value = deal.customer || '';
+            document.getElementById('edit-value').value = deal.value || 0;
+            document.getElementById('edit-stage').value = deal.stage || 'New';
+            document.getElementById('edit-probability').value = deal.probability || 0;
+            document.getElementById('edit-expected-close').value = deal.expected_close || '';
+            document.getElementById('edit-notes').value = deal.notes || '';
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load deal data');
+        });
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function saveDeal() {
+    const dealId = document.getElementById('edit-id').value;
+    const formData = new FormData();
+    formData.append('title', document.getElementById('edit-title').value);
+    formData.append('customer', document.getElementById('edit-customer').value);
+    formData.append('value', document.getElementById('edit-value').value);
+    formData.append('stage', document.getElementById('edit-stage').value);
+    formData.append('probability', document.getElementById('edit-probability').value);
+    formData.append('expected_close', document.getElementById('edit-expected-close').value);
+    formData.append('notes', document.getElementById('edit-notes').value);
+    
+    fetch(`/api/deal/${dealId}/edit/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to update deal');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred');
+    });
+}
+
+function deleteDeal(dealId) {
+    if (confirm('Are you sure you want to delete this deal?')) {
+        fetch(`/api/deals/${dealId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                window.location.reload();
+            } else {
+                alert('Failed to delete deal');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditModal();
+    }
+});
+</script>
 {% endblock %}

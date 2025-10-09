@@ -423,3 +423,200 @@ def logout_view(request):
     logout(request)
     messages.success(request, '👋 See you soon!')
     return redirect('login')
+@require_http_methods(["GET", "POST"])
+def edit_customer(request, customer_id):
+    """Edit customer"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    # Get customer from Firebase
+    customers = FirebaseDB.get_records('customers')
+    customer = None
+    for c in customers:
+        if c.get('id') == customer_id:
+            customer = c
+            break
+    
+    if not customer:
+        return JsonResponse({'error': 'Customer not found'}, status=404)
+    
+    if request.method == 'GET':
+        # Return customer data as JSON for the edit form
+        return JsonResponse({
+            'id': customer.get('id', ''),
+            'name': customer.get('name', ''),
+            'email': customer.get('email', ''),
+            'phone': customer.get('phone', ''),
+            'company': customer.get('company', ''),
+            'status': customer.get('status', 'Lead'),
+            'value': customer.get('value', 0),
+            'notes': customer.get('notes', '')
+        })
+    
+    # POST request - update customer
+    update_data = {
+        'name': request.POST.get('name'),
+        'email': request.POST.get('email'),
+        'phone': request.POST.get('phone', ''),
+        'company': request.POST.get('company', ''),
+        'status': request.POST.get('status'),
+        'value': float(request.POST.get('value', 0)),
+        'notes': request.POST.get('notes', '')
+    }
+    
+    success = FirebaseDB.update_record('customers', customer_id, update_data)
+    
+    if success:
+        messages.success(request, '✅ Customer updated successfully!')
+        return redirect('customers')
+    else:
+        messages.error(request, '❌ Failed to update customer')
+        return redirect('customers')
+
+@require_http_methods(["GET", "POST"])
+def edit_employee(request, employee_id):
+    """Edit employee"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    # Get employee from Firebase
+    employees = FirebaseDB.get_records('employees')
+    employee = None
+    for e in employees:
+        if e.get('id') == employee_id:
+            employee = e
+            break
+    
+    if not employee:
+        return JsonResponse({'error': 'Employee not found'}, status=404)
+    
+    if request.method == 'GET':
+        # Return employee data as JSON for the edit form
+        return JsonResponse({
+            'id': employee.get('id', ''),
+            'name': employee.get('name', ''),
+            'email': employee.get('email', ''),
+            'department': employee.get('department', ''),
+            'role': employee.get('role', ''),
+            'salary': employee.get('salary', 0),
+            'skills': ','.join(employee.get('skills', [])) if isinstance(employee.get('skills'), list) else employee.get('skills', ''),
+            'hire_date': employee.get('hire_date', '')
+        })
+    
+    # POST request - update employee
+    update_data = {
+        'name': request.POST.get('name'),
+        'email': request.POST.get('email'),
+        'department': request.POST.get('department'),
+        'role': request.POST.get('role'),
+        'salary': float(request.POST.get('salary', 0)),
+        'skills': request.POST.get('skills', '').split(',') if request.POST.get('skills') else [],
+        'hire_date': request.POST.get('hire_date')
+    }
+    
+    success = FirebaseDB.update_record('employees', employee_id, update_data)
+    
+    if success:
+        messages.success(request, '✅ Employee updated successfully!')
+        return redirect('employees')
+    else:
+        messages.error(request, '❌ Failed to update employee')
+        return redirect('employees')
+
+@require_http_methods(["GET", "POST"])
+def edit_deal(request, deal_id):
+    """Edit deal"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    # Get deal from Firebase
+    deals = FirebaseDB.get_records('deals')
+    deal = None
+    for d in deals:
+        if d.get('id') == deal_id:
+            deal = d
+            break
+    
+    if not deal:
+        return JsonResponse({'error': 'Deal not found'}, status=404)
+    
+    if request.method == 'GET':
+        # Return deal data as JSON for the edit form
+        return JsonResponse({
+            'id': deal.get('id', ''),
+            'title': deal.get('title', ''),
+            'customer': deal.get('customer', ''),
+            'value': deal.get('value', 0),
+            'stage': deal.get('stage', 'New'),
+            'probability': deal.get('probability', 0),
+            'expected_close': deal.get('expected_close', ''),
+            'notes': deal.get('notes', '')
+        })
+    
+    # POST request - update deal
+    update_data = {
+        'title': request.POST.get('title'),
+        'customer': request.POST.get('customer'),
+        'value': float(request.POST.get('value', 0)),
+        'stage': request.POST.get('stage'),
+        'probability': int(request.POST.get('probability', 0)),
+        'expected_close': request.POST.get('expected_close'),
+        'notes': request.POST.get('notes', '')
+    }
+    
+    success = FirebaseDB.update_record('deals', deal_id, update_data)
+    
+    if success:
+        messages.success(request, '✅ Deal updated successfully!')
+        return redirect('deals')
+    else:
+        messages.error(request, '❌ Failed to update deal')
+        return redirect('deals')
+
+@require_http_methods(["GET", "POST"])
+def edit_task(request, task_id):
+    """Edit task"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    # Get task from Firebase
+    tasks = FirebaseDB.get_records('tasks')
+    task = None
+    for t in tasks:
+        if t.get('id') == task_id:
+            task = t
+            break
+    
+    if not task:
+        return JsonResponse({'error': 'Task not found'}, status=404)
+    
+    if request.method == 'GET':
+        # Return task data as JSON for the edit form
+        return JsonResponse({
+            'id': task.get('id', ''),
+            'title': task.get('title', ''),
+            'description': task.get('description', ''),
+            'assigned_to': task.get('assigned_to', ''),
+            'due_date': task.get('due_date', ''),
+            'priority': task.get('priority', 'Medium'),
+            'status': task.get('status', 'Pending')
+        })
+    
+    # POST request - update task
+    update_data = {
+        'title': request.POST.get('title'),
+        'description': request.POST.get('description'),
+        'assigned_to': request.POST.get('assigned_to'),
+        'due_date': request.POST.get('due_date'),
+        'priority': request.POST.get('priority'),
+        'status': request.POST.get('status')
+    }
+    
+    success = FirebaseDB.update_record('tasks', task_id, update_data)
+    
+    if success:
+        messages.success(request, '✅ Task updated successfully!')
+        return redirect('tasks')
+    else:
+        messages.error(request, '❌ Failed to update task')
+        return redirect('tasks')
