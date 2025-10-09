@@ -5,6 +5,150 @@
 {% block page_title %}Employee Management{% endblock %}
 
 {% block content %}
+<style>
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: linear-gradient(135deg, rgba(26, 29, 41, 0.95), rgba(45, 49, 66, 0.95));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-close:hover {
+        background: rgba(255, 59, 48, 0.3);
+        transform: rotate(90deg);
+    }
+
+    /* Department Card Styles */
+    .department-card {
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .department-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(80, 200, 120, 0.1));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .department-card:hover::before {
+        opacity: 1;
+    }
+    
+    .department-card:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        border-color: rgba(74, 144, 226, 0.5);
+    }
+    
+    .department-card.active {
+        border-color: #50c878;
+        background: linear-gradient(135deg, rgba(80, 200, 120, 0.2), rgba(74, 144, 226, 0.2));
+        transform: scale(1.05);
+    }
+    
+    .department-card.active::after {
+        content: '✓';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 24px;
+        height: 24px;
+        background: #50c878;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        color: white;
+    }
+    
+    .department-name {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .department-count {
+        position: relative;
+        z-index: 1;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 8px;
+    }
+</style>
+
 <!-- Add Employee Form -->
 <div class="glass-panel" style="margin-bottom: 24px;">
     <h2 style="font-size: 18px; margin-bottom: 20px;">Add New Employee</h2>
@@ -25,9 +169,58 @@
     </form>
 </div>
 
+<!-- Department Filter Section -->
+<div class="glass-panel" style="margin-bottom: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+        Filter by Department
+        <span id="activeFilter" style="margin-left: auto; color: #50c878; font-size: 14px;"></span>
+    </h2>
+    
+    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <!-- All Departments Card -->
+        <div class="glass-card department-card active" data-department="all" onclick="filterByDepartment('all')" style="min-width: 150px;">
+            <div class="department-name" style="font-size: 18px; font-weight: 600; color: #50c878;">
+                All Departments
+            </div>
+            <div class="department-count">
+                {{ employees|length }} employees
+            </div>
+        </div>
+        
+        <!-- Individual Department Cards -->
+        {% for dept in departments %}
+        <div class="glass-card department-card" data-department="{{ dept }}" onclick="filterByDepartment('{{ dept }}')" style="min-width: 150px;">
+            <div class="department-name" style="font-size: 18px; font-weight: 600; color: #4a90e2;">
+                {{ dept }}
+            </div>
+            <div class="department-count">
+                {% with dept_count=0 %}
+                    {% for emp in employees %}
+                        {% if emp.department == dept %}
+                            {% with dept_count=dept_count|add:1 %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <span class="dept-count-{{ dept|slugify }}">
+                        {% for emp in employees %}{% if emp.department == dept %}{% if forloop.first %}{{ forloop.parentloop.counter0 }}{% endif %}{% endif %}{% endfor %}
+                    </span> employees
+                {% endwith %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
 <!-- Employee List -->
 <div class="glass-panel">
-    <h2 style="font-size: 18px; margin-bottom: 20px;">Employee List</h2>
+    <h2 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <span>Employee List</span>
+        <span id="employeeCount" style="font-size: 14px; color: rgba(255,255,255,0.6);">
+            Showing {{ employees|length }} of {{ employees|length }} employees
+        </span>
+    </h2>
     <div class="glass-table">
         <table style="width: 100%;">
             <thead>
@@ -40,16 +233,23 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="employeeTableBody">
                 {% for employee in employees %}
-                <tr>
-                    <td>{{ employee.name }}</td>
-                    <td>{{ employee.email }}</td>
-                    <td>{{ employee.department }}</td>
-                    <td>{{ employee.role }}</td>
-                    <td>${{ employee.salary|default:"0" }}</td>
+                <tr id="employee-{{ employee.id }}" class="employee-row" data-department="{{ employee.department }}">
+                    <td class="employee-name">{{ employee.name }}</td>
+                    <td class="employee-email">{{ employee.email }}</td>
+                    <td class="employee-department">
+                        <span style="padding: 4px 8px; background: rgba(74, 144, 226, 0.2); border-radius: 4px;">
+                            {{ employee.department }}
+                        </span>
+                    </td>
+                    <td class="employee-role">{{ employee.role }}</td>
+                    <td class="employee-salary">${{ employee.salary|default:"0" }}</td>
                     <td>
-                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                        <button class="glass-btn" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="editEmployee('{{ employee.id }}')">Edit</button>
+                        <button class="glass-btn danger" style="padding: 4px 8px; font-size: 12px;" 
+                                onclick="deleteEmployee('{{ employee.id }}')">Delete</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -62,18 +262,331 @@
     </div>
 </div>
 
-<!-- Department Summary -->
-<div class="glass-panel" style="margin-top: 24px;">
-    <h2 style="font-size: 18px; margin-bottom: 20px;">Department Summary</h2>
-    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-        {% for dept in departments %}
-        <div class="glass-card">
-            <div style="font-size: 18px; font-weight: 600; color: #4a90e2;">{{ dept }}</div>
-        </div>
-        {% endfor %}
-    </div>
-    <div style="margin-top: 20px;">
-        <p>Total Salary Budget: <strong>${{ total_salary|floatformat:0 }}</strong></p>
+<!-- Edit Modal with Blur Overlay -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeEditModal()">
+            <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+        
+        <h2 style="margin-bottom: 30px; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #4a90e2, #50c878); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Edit Employee
+        </h2>
+        
+        <form id="editForm">
+            <input type="hidden" id="edit-id">
+            
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Name *</label>
+                    <input type="text" id="edit-name" placeholder="Name" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Email *</label>
+                    <input type="email" id="edit-email" placeholder="Email" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Department</label>
+                    <input type="text" id="edit-department" placeholder="Department" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Role</label>
+                    <input type="text" id="edit-role" placeholder="Role" class="glass-input" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Salary ($)</label>
+                    <input type="number" id="edit-salary" placeholder="Salary" class="glass-input" min="0">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Hire Date</label>
+                    <input type="date" id="edit-hire-date" class="glass-input">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255,255,255,0.8);">Skills (comma-separated)</label>
+                    <input type="text" id="edit-skills" placeholder="Skills" class="glass-input">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 16px; margin-top: 30px;">
+                <button type="button" onclick="saveEmployee()" class="glass-btn primary" style="flex: 1;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 8px;">
+                        <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                    </svg>
+                    Save Changes
+                </button>
+                <button type="button" onclick="closeEditModal()" class="glass-btn secondary">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<!-- Summary Statistics -->
+<div class="glass-panel" style="margin-top: 24px;">
+    <h2 style="font-size: 18px; margin-bottom: 20px;">Summary Statistics</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div class="glass-card">
+            <div style="font-size: 24px; font-weight: 700; color: #4a90e2;">{{ employees|length }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Employees</div>
+        </div>
+        <div class="glass-card">
+            <div style="font-size: 24px; font-weight: 700; color: #50c878;">{{ departments|length }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Departments</div>
+        </div>
+        <div class="glass-card">
+            <div style="font-size: 24px; font-weight: 700; color: #ffd700;">${{ total_salary|floatformat:0 }}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Salary Budget</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentDepartment = 'all';
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function filterByDepartment(department) {
+    currentDepartment = department;
+    
+    // Update active state on department cards
+    document.querySelectorAll('.department-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    document.querySelector(`[data-department="${department}"]`).classList.add('active');
+    
+    // Filter employee rows
+    const rows = document.querySelectorAll('.employee-row');
+    let visibleCount = 0;
+    let totalCount = rows.length;
+    
+    rows.forEach(row => {
+        const rowDepartment = row.getAttribute('data-department');
+        if (department === 'all' || rowDepartment === department) {
+            row.style.display = '';
+            visibleCount++;
+            // Add fade-in animation
+            row.style.animation = 'fadeIn 0.3s ease';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update employee count
+    const countDisplay = document.getElementById('employeeCount');
+    if (department === 'all') {
+        countDisplay.textContent = `Showing all ${totalCount} employees`;
+        document.getElementById('activeFilter').textContent = '';
+    } else {
+        countDisplay.textContent = `Showing ${visibleCount} of ${totalCount} employees`;
+        document.getElementById('activeFilter').textContent = `Filtered: ${department}`;
+    }
+    
+    // Show notification
+    showNotification(
+        department === 'all' 
+            ? `Showing all employees` 
+            : `Filtered to ${department} department (${visibleCount} employees)`,
+        'info'
+    );
+}
+
+function editEmployee(employeeId) {
+    fetch(`/api/employee/${employeeId}/edit/`)
+        .then(response => response.json())
+        .then(employee => {
+            document.getElementById('edit-id').value = employeeId;
+            document.getElementById('edit-name').value = employee.name || '';
+            document.getElementById('edit-email').value = employee.email || '';
+            document.getElementById('edit-department').value = employee.department || '';
+            document.getElementById('edit-role').value = employee.role || '';
+            document.getElementById('edit-salary').value = employee.salary || 0;
+            document.getElementById('edit-hire-date').value = employee.hire_date || '';
+            document.getElementById('edit-skills').value = employee.skills || '';
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load employee data');
+        });
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function saveEmployee() {
+    const employeeId = document.getElementById('edit-id').value;
+    const formData = new FormData();
+    formData.append('name', document.getElementById('edit-name').value);
+    formData.append('email', document.getElementById('edit-email').value);
+    formData.append('department', document.getElementById('edit-department').value);
+    formData.append('role', document.getElementById('edit-role').value);
+    formData.append('salary', document.getElementById('edit-salary').value);
+    formData.append('hire_date', document.getElementById('edit-hire-date').value);
+    formData.append('skills', document.getElementById('edit-skills').value);
+    
+    fetch(`/api/employee/${employeeId}/edit/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('Employee updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification('Failed to update employee', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred', 'error');
+    });
+}
+
+function deleteEmployee(employeeId) {
+    if (confirm('Are you sure you want to delete this employee?')) {
+        fetch(`/api/employees/${employeeId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification('Employee deleted successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showNotification('Failed to delete employee', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred', 'error');
+        });
+    }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `glass-alert ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed; 
+        top: 20px; 
+        right: 20px; 
+        z-index: 10000; 
+        min-width: 300px; 
+        padding: 16px 20px;
+        border-radius: 8px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS for notifications
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .glass-alert.success {
+        background: rgba(80, 200, 120, 0.1);
+        border-left: 4px solid #50c878;
+        color: #50c878;
+        backdrop-filter: blur(10px);
+    }
+    
+    .glass-alert.error {
+        background: rgba(255, 59, 48, 0.1);
+        border-left: 4px solid #ff3b30;
+        color: #ff3b30;
+        backdrop-filter: blur(10px);
+    }
+    
+    .glass-alert.info {
+        background: rgba(74, 144, 226, 0.1);
+        border-left: 4px solid #4a90e2;
+        color: #4a90e2;
+        backdrop-filter: blur(10px);
+    }
+`;
+document.head.appendChild(style);
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditModal();
+    }
+});
+
+// Initialize - show all employees on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Employee page loaded with department filtering');
+});
+</script>
 {% endblock %}
