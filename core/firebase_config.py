@@ -4,19 +4,35 @@ import json
 import os
 from datetime import datetime
 import hashlib
+from decouple import config
+
+# Read Firebase configuration from environment
+FIREBASE_CREDENTIALS_PATH = config('FIREBASE_CREDENTIALS_PATH', default='core/serviceAccountKey.json')
+FIREBASE_DATABASE_URL = config('FIREBASE_DATABASE_URL', default='')
+FIREBASE_PROJECT_ID = config('FIREBASE_PROJECT_ID', default='')
 
 # Initialize Firebase Admin SDK
 try:
-    cred_path = 'core/serviceAccountKey.json'
+    cred_path = FIREBASE_CREDENTIALS_PATH
     if os.path.exists(cred_path):
         cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
+        
+        # Build Firebase app options
+        firebase_options = {
+            'projectId': FIREBASE_PROJECT_ID
+        }
+        
+        if FIREBASE_DATABASE_URL:
+            firebase_options['databaseURL'] = FIREBASE_DATABASE_URL
+        
+        firebase_admin.initialize_app(cred, firebase_options)
         db = firestore.client()
         print("✅ Firebase Admin initialized")
     else:
         # Development mode without Firebase
         db = None
         print("⚠️ Firebase credentials not found - using local mode")
+        print(f"   Expected path: {cred_path}")
 except Exception as e:
     db = None
     print(f"⚠️ Firebase error: {e}")
@@ -63,27 +79,7 @@ class FirebaseDB:
         """Get records as LIST of DICTIONARIES"""
         if not db:
             # Return mock data for local development
-            mock_data = {
-                'customers': [
-                    {'id': '1', 'name': 'John Doe', 'email': 'john@example.com', 
-                     'company': 'Tech Corp', 'status': 'Active', 'value': 50000},
-                    {'id': '2', 'name': 'Jane Smith', 'email': 'jane@example.com', 
-                     'company': 'Design Studio', 'status': 'Lead', 'value': 30000}
-                ],
-                'employees': [
-                    {'id': '1', 'name': 'Alice Johnson', 'email': 'alice@company.com',
-                     'department': 'Sales', 'role': 'Manager', 'salary': 75000}
-                ],
-                'deals': [
-                    {'id': '1', 'title': 'Big Deal', 'customer': 'Tech Corp', 
-                     'value': 100000, 'stage': 'Proposal', 'probability': 75}
-                ],
-                'tasks': [
-                    {'id': '1', 'title': 'Follow up', 'priority': 'High',
-                     'status': 'Pending', 'due_date': '2024-12-31'}
-                ]
-            }
-            return mock_data.get(collection, [])
+            return FirebaseDB._get_mock_data(collection)
         
         records = []  # LIST to store records
         try:
@@ -157,6 +153,31 @@ class FirebaseDB:
         stats['unique_fields'] = list(stats['unique_fields'])[:10]  # Convert SET to LIST
         
         return stats
+    
+    @staticmethod
+    def _get_mock_data(collection: str) -> list:
+        """Return mock data for local development"""
+        mock_data = {
+            'customers': [
+                {'id': '1', 'name': 'John Doe', 'email': 'john@example.com', 
+                 'company': 'Tech Corp', 'status': 'Active', 'value': 50000},
+                {'id': '2', 'name': 'Jane Smith', 'email': 'jane@example.com', 
+                 'company': 'Design Studio', 'status': 'Lead', 'value': 30000}
+            ],
+            'employees': [
+                {'id': '1', 'name': 'Alice Johnson', 'email': 'alice@company.com',
+                 'department': 'Sales', 'role': 'Manager', 'salary': 75000}
+            ],
+            'deals': [
+                {'id': '1', 'title': 'Big Deal', 'customer': 'Tech Corp', 
+                 'value': 100000, 'stage': 'Proposal', 'probability': 75}
+            ],
+            'tasks': [
+                {'id': '1', 'title': 'Follow up', 'priority': 'High',
+                 'status': 'Pending', 'due_date': '2024-12-31'}
+            ]
+        }
+        return mock_data.get(collection, [])
 
 class FirebaseAuth:
     """Simple authentication using Firebase Admin SDK or local auth"""
@@ -230,7 +251,6 @@ class FirebaseAuth:
                 if user_data:
                     # For Firebase Admin SDK, we can't verify passwords directly
                     # In production, you would use Firebase Client SDK or custom tokens
-                    # For now, we'll trust the email/password combination
                     return {'success': True, 'user': {
                         'localId': user_data['uid'],
                         'email': email,
@@ -273,168 +293,43 @@ class FirebaseManager:
     @staticmethod
     def create_customer(customer_data):
         """Create customer in Firebase and return ID"""
-        if db:
-            try:
-                doc_ref = db.collection('customers').add(customer_data)
-                return doc_ref[1].id
-            except Exception as e:
-                print(f"Error creating customer in Firebase: {e}")
-                return None
-        return f"local_customer_{int(datetime.now().timestamp())}"
+        return FirebaseDB.add_record('customers', customer_data)
     
     @staticmethod
     def update_customer(firebase_id, customer_data):
         """Update customer in Firebase"""
-        if db and firebase_id:
-            try:
-                db.collection('customers').document(firebase_id).update(customer_data)
-                return True
-            except Exception as e:
-                print(f"Error updating customer in Firebase: {e}")
-                return False
-        return False
+        return FirebaseDB.update_record('customers', firebase_id, customer_data)
     
     @staticmethod
     def delete_customer(firebase_id):
         """Delete customer from Firebase"""
-        if db and firebase_id:
-            try:
-                db.collection('customers').document(firebase_id).delete()
-                return True
-            except Exception as e:
-                print(f"Error deleting customer from Firebase: {e}")
-                return False
-        return False
+        return FirebaseDB.delete_record('customers', firebase_id)
     
     @staticmethod
     def create_deal(deal_data):
         """Create deal in Firebase and return ID"""
-        if db:
-            try:
-                doc_ref = db.collection('deals').add(deal_data)
-                return doc_ref[1].id
-            except Exception as e:
-                print(f"Error creating deal in Firebase: {e}")
-                return None
-        return f"local_deal_{int(datetime.now().timestamp())}"
+        return FirebaseDB.add_record('deals', deal_data)
     
     @staticmethod
     def update_deal(firebase_id, deal_data):
         """Update deal in Firebase"""
-        if db and firebase_id:
-            try:
-                db.collection('deals').document(firebase_id).update(deal_data)
-                return True
-            except Exception as e:
-                print(f"Error updating deal in Firebase: {e}")
-                return False
-        return False
+        return FirebaseDB.update_record('deals', firebase_id, deal_data)
     
     @staticmethod
     def create_interaction(interaction_data):
         """Create interaction in Firebase and return ID"""
-        if db:
-            try:
-                doc_ref = db.collection('interactions').add(interaction_data)
-                return doc_ref[1].id
-            except Exception as e:
-                print(f"Error creating interaction in Firebase: {e}")
-                return None
-        return f"local_interaction_{int(datetime.now().timestamp())}"
-    
-    @staticmethod
-    def sync_customer_from_firebase(firebase_id):
-        """Sync customer data from Firebase to Django"""
-        if db and firebase_id:
-            try:
-                doc = db.collection('customers').document(firebase_id).get()
-                if doc.exists:
-                    return doc.to_dict()
-            except Exception as e:
-                print(f"Error syncing customer from Firebase: {e}")
-        return None
+        return FirebaseDB.add_record('interactions', interaction_data)
     
     @staticmethod
     def bulk_sync_customers():
         """Sync all customers from Firebase"""
-        if db:
-            try:
-                customers = []
-                docs = db.collection('customers').stream()
-                for doc in docs:
-                    customer_data = doc.to_dict()
-                    customer_data['firebase_id'] = doc.id
-                    customers.append(customer_data)
-                return customers
-            except Exception as e:
-                print(f"Error bulk syncing customers: {e}")
-        return []
-    
-    @staticmethod
-    def get_real_time_updates(collection, callback):
-        """Set up real-time listeners for Firebase collections"""
-        if db:
-            try:
-                def on_snapshot(doc_snapshot, changes, read_time):
-                    for change in changes:
-                        if change.type.name == 'ADDED':
-                            callback('added', change.document.to_dict())
-                        elif change.type.name == 'MODIFIED':
-                            callback('modified', change.document.to_dict())
-                        elif change.type.name == 'REMOVED':
-                            callback('removed', change.document.to_dict())
-                
-                # Set up listener
-                doc_watch = db.collection(collection).on_snapshot(on_snapshot)
-                return doc_watch
-            except Exception as e:
-                print(f"Error setting up real-time listener: {e}")
-        return None
-    
-    @staticmethod
-    def backup_data(collection):
-        """Backup collection data"""
-        if db:
-            try:
-                docs = db.collection(collection).stream()
-                backup_data = []
-                for doc in docs:
-                    data = doc.to_dict()
-                    data['_doc_id'] = doc.id
-                    backup_data.append(data)
-                
-                # Save to file
-                backup_filename = f"backup_{collection}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-                with open(backup_filename, 'w') as f:
-                    json.dump(backup_data, f, indent=2, default=str)
-                
-                print(f"Backup saved to {backup_filename}")
-                return backup_filename
-            except Exception as e:
-                print(f"Error backing up data: {e}")
-        return None
-    
-    @staticmethod
-    def restore_data(collection, backup_file):
-        """Restore collection data from backup"""
-        if db and os.path.exists(backup_file):
-            try:
-                with open(backup_file, 'r') as f:
-                    backup_data = json.load(f)
-                
-                batch = db.batch()
-                for item in backup_data:
-                    doc_id = item.pop('_doc_id', None)
-                    if doc_id:
-                        doc_ref = db.collection(collection).document(doc_id)
-                        batch.set(doc_ref, item)
-                
-                batch.commit()
-                print(f"Data restored from {backup_file}")
-                return True
-            except Exception as e:
-                print(f"Error restoring data: {e}")
-        return False
+        return FirebaseDB.get_records('customers')
 
-# Create default admin user for testing
-FirebaseAuth.sign_up('admin@crm.com', 'admin123', 'Admin User')
+# Create default admin user for testing (using env variables)
+DEMO_EMAIL = config('DEMO_USER_EMAIL', default='admin@crm.com')
+DEMO_PASSWORD = config('DEMO_USER_PASSWORD', default='admin123')
+DEMO_NAME = config('DEMO_USER_NAME', default='Admin User')
+
+# Only create demo user if Firebase is connected
+if db:
+    FirebaseAuth.sign_up(DEMO_EMAIL, DEMO_PASSWORD, DEMO_NAME)
