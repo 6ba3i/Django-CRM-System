@@ -10,68 +10,148 @@
     <div class="glass-card">
         <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Total Records</h3>
         <div style="font-size: 32px; font-weight: 700;">{{ stats.total_records }}</div>
+        <p style="font-size: 12px; opacity: 0.6; margin-top: 4px;">
+            Customers: {{ stats.customers_total }} | Employees: {{ stats.employees_total }} | 
+            Deals: {{ stats.deals_total }} | Tasks: {{ stats.tasks_total }}
+        </p>
     </div>
     
     <div class="glass-card">
         <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Unique Emails</h3>
         <div style="font-size: 32px; font-weight: 700;">{{ stats.unique_emails }}</div>
+        <p style="font-size: 12px; opacity: 0.6; margin-top: 4px;">Across all contacts</p>
     </div>
     
     <div class="glass-card">
-        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Average Value</h3>
-        <div style="font-size: 32px; font-weight: 700;">${{ stats.average_value|floatformat:2 }}</div>
+        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Average Deal Value</h3>
+        <div style="font-size: 32px; font-weight: 700;">${{ stats.average_value|floatformat:0 }}</div>
+        <p style="font-size: 12px; opacity: 0.6; margin-top: 4px;">Total: ${{ stats.total_deal_value|floatformat:0 }}</p>
     </div>
     
     <div class="glass-card">
-        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Status Breakdown</h3>
+        <h3 style="font-size: 14px; margin-bottom: 8px; opacity: 0.8;">Customer Status</h3>
         {% for status, count in stats.status_counts.items %}
-        <div style="font-size: 14px; margin: 4px 0;">{{ status }}: {{ count }}</div>
+        <div style="font-size: 14px; margin: 4px 0;">
+            <span style="opacity: 0.8;">{{ status }}:</span> 
+            <strong>{{ count }}</strong>
+        </div>
+        {% empty %}
+        <p style="font-size: 14px; opacity: 0.6;">No customer data</p>
         {% endfor %}
     </div>
 </div>
 
-<!-- Charts -->
+<!-- Charts Grid -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-    <!-- Status Distribution -->
+    
+    <!-- Customer Growth Chart -->
     <div class="glass-panel">
-        <h2 style="font-size: 18px; margin-bottom: 20px;">Status Distribution</h2>
-        {% if charts.status_distribution %}
-        <img src="data:image/png;base64,{{ charts.status_distribution }}" style="width: 100%; height: auto;">
+        <h2 style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">Customer Growth Over Time</h2>
+        {% if charts.customer_growth %}
+        <img src="data:image/png;base64,{{ charts.customer_growth }}" style="width: 100%; height: auto; border-radius: 8px;">
         {% else %}
-        <p>No data available</p>
+        <p style="opacity: 0.6;">No data available</p>
         {% endif %}
     </div>
     
-    <!-- Value Comparison -->
+    <!-- Revenue Trend Chart -->
     <div class="glass-panel">
-        <h2 style="font-size: 18px; margin-bottom: 20px;">Top Customers by Value</h2>
-        {% if charts.value_comparison %}
-        <img src="data:image/png;base64,{{ charts.value_comparison }}" style="width: 100%; height: auto;">
+        <h2 style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">Revenue Trend</h2>
+        {% if charts.revenue_by_month %}
+        <img src="data:image/png;base64,{{ charts.revenue_by_month }}" style="width: 100%; height: auto; border-radius: 8px;">
         {% else %}
-        <p>No data available</p>
+        <p style="opacity: 0.6;">No data available</p>
         {% endif %}
+    </div>
+    
+    <!-- Deal Probability Scatter -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">Deal Probability vs Value</h2>
+        {% if charts.deal_probability %}
+        <img src="data:image/png;base64,{{ charts.deal_probability }}" style="width: 100%; height: auto; border-radius: 8px;">
+        {% else %}
+        <p style="opacity: 0.6;">No data available</p>
+        {% endif %}
+    </div>
+    
+    <!-- Employee Salary Distribution -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">Salary Distribution</h2>
+        {% if charts.employee_salary %}
+        <img src="data:image/png;base64,{{ charts.employee_salary }}" style="width: 100%; height: auto; border-radius: 8px;">
+        {% else %}
+        <p style="opacity: 0.6;">No data available</p>
+        {% endif %}
+    </div>
+    
+    <!-- Task Priority Pie Chart -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">Task Priorities</h2>
+        {% if charts.task_priority %}
+        <img src="data:image/png;base64,{{ charts.task_priority }}" style="width: 100%; height: auto; border-radius: 8px;">
+        {% else %}
+        <p style="opacity: 0.6;">No data available</p>
+        {% endif %}
+    </div>
+    
+    <!-- Department Performance -->
+    <div class="glass-panel">
+        <h2 style="font-size: 18px; margin-bottom: 20px; font-weight: 600;">Department Performance</h2>
+        {% if charts.department_performance %}
+        <img src="data:image/png;base64,{{ charts.department_performance }}" style="width: 100%; height: auto; border-radius: 8px;">
+        {% else %}
+        <p style="opacity: 0.6;">No data available</p>
+        {% endif %}
+    </div>
+    
+</div>
+
+<!-- Additional Insights -->
+<div class="glass-panel" style="margin-top: 24px;">
+    <h2 style="font-size: 20px; margin-bottom: 16px; font-weight: 600;">Key Insights</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div>
+            <h3 style="font-size: 14px; opacity: 0.8; margin-bottom: 8px;">Total Salary Budget</h3>
+            <p style="font-size: 24px; font-weight: 700;">${{ stats.total_salary|floatformat:0 }}</p>
+        </div>
+        <div>
+            <h3 style="font-size: 14px; opacity: 0.8; margin-bottom: 8px;">Active Deals</h3>
+            <p style="font-size: 24px; font-weight: 700;">{{ stats.deals_total }}</p>
+        </div>
+        <div>
+            <h3 style="font-size: 14px; opacity: 0.8; margin-bottom: 8px;">Total Pipeline Value</h3>
+            <p style="font-size: 24px; font-weight: 700;">${{ stats.total_deal_value|floatformat:0 }}</p>
+        </div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-    <!-- Growth Timeline -->
-    <div class="glass-panel">
-        <h2 style="font-size: 18px; margin-bottom: 20px;">Customer Growth Timeline</h2>
-        {% if charts.growth_timeline %}
-        <img src="data:image/png;base64,{{ charts.growth_timeline }}" style="width: 100%; height: auto;">
-        {% else %}
-        <p>No data available</p>
-        {% endif %}
-    </div>
-    
-    <!-- Company Breakdown -->
-    <div class="glass-panel">
-        <h2 style="font-size: 18px; margin-bottom: 20px;">Customers by Company</h2>
-        {% if charts.company_breakdown %}
-        <img src="data:image/png;base64,{{ charts.company_breakdown }}" style="width: 100%; height: auto;">
-        {% else %}
-        <p>No data available</p>
-        {% endif %}
-    </div>
-</div>
+<style>
+.glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+</style>
 {% endblock %}

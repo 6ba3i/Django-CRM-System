@@ -405,12 +405,40 @@ def analytics_view(request):
         'department_performance': ChartGenerator.generate_stacked_bar(employees, deals, 'Department Performance')
     }
     
-    # Complex statistics using all data structures
+    # Aggregate statistics from all collections
+    total_records = len(customers) + len(employees) + len(deals) + len(tasks)
+    
+    # Get unique emails from all collections
+    all_emails = set()
+    for customer in customers:
+        if customer.get('email'):
+            all_emails.add(customer.get('email'))
+    for employee in employees:
+        if employee.get('email'):
+            all_emails.add(employee.get('email'))
+    
+    # Calculate average deal value
+    total_deal_value = sum([d.get('value', 0) for d in deals])
+    average_value = total_deal_value / len(deals) if deals else 0
+    
+    # Get status breakdown from customers
+    status_counts = {}
+    for customer in customers:
+        status = customer.get('status', 'Unknown')
+        status_counts[status] = status_counts.get(status, 0) + 1
+    
+    # Combined statistics
     stats = {
-        'customers': FirebaseDB.get_statistics('customers'),
-        'employees': FirebaseDB.get_statistics('employees'),
-        'deals': FirebaseDB.get_statistics('deals'),
-        'tasks': FirebaseDB.get_statistics('tasks')
+        'total_records': total_records,
+        'unique_emails': len(all_emails),
+        'average_value': average_value,
+        'status_counts': status_counts,
+        'customers_total': len(customers),
+        'employees_total': len(employees),
+        'deals_total': len(deals),
+        'tasks_total': len(tasks),
+        'total_deal_value': total_deal_value,
+        'total_salary': sum([e.get('salary', 0) for e in employees])
     }
     
     return render(request, 'analytics.html', {
